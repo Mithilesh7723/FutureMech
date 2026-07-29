@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function BookingForm() {
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -18,9 +20,24 @@ export function BookingForm() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowModal(true);
+    setSubmitError("");
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) throw new Error("Submission failed");
+      setShowModal(true);
+      setFormData({ name: "", phone: "", email: "", service: "", vehicle: "", message: "" });
+    } catch {
+      setSubmitError("Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   useEffect(() => {
@@ -186,11 +203,18 @@ export function BookingForm() {
 
               <button
                 type="submit"
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-[0.875rem] font-semibold text-white-pure transition-all duration-200 hover:bg-graphite active:scale-[0.98]"
+                disabled={submitting}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-[0.875rem] font-semibold text-white-pure transition-all duration-200 hover:bg-graphite active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send size={14} />
-                Book Free Health Check
+                {submitting ? "Submitting..." : "Book Free Health Check"}
               </button>
+
+              {submitError && (
+                <p className="mt-2 text-center text-[0.75rem] text-terracotta">
+                  {submitError}
+                </p>
+              )}
 
               <p className="mt-3 text-center text-[0.6875rem] text-stone">
                 Free for new customers. We&apos;ll confirm within a few hours.
