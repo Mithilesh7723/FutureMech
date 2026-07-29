@@ -1,0 +1,295 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-dm-sans), system-ui, sans-serif;
+  --font-serif: var(--font-dm-serif), Georgia, serif;
+}
+
+@theme inline {
+  --color-ivory: #F8F7F4;
+  --color-linen: #F1EFE9;
+  --color-parchment: #E5E2DA;
+  --color-sand: #C9C4BA;
+  --color-stone: #8A857D;
+  --color-graphite: #3D3A36;
+  --color-ink: #1A1816;
+  --color-bronze: #8B7355;
+  --color-bronze-hover: #6D5A43;
+  --color-bronze-light: #F5EDE3;
+  --color-sage: #5B8A5F;
+  --color-sage-light: #EBF3EC;
+  --color-amber-muted: #C4973B;
+  --color-amber-light: #FEF9EE;
+  --color-terracotta: #B85C38;
+  --color-terracotta-light: #FDF2EE;
+  --color-white-pure: #FFFFFF;
+}
+
+:root {
+  --background: #F8F7F4;
+  --foreground: #3D3A36;
+  --primary: #1A1816;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1EFE9;
+  --secondary-foreground: #3D3A36;
+  --muted: #F1EFE9;
+  --muted-foreground: #8A857D;
+  --accent: #F5EDE3;
+  --accent-foreground: #3D3A36;
+  --destructive: #B85C38;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5E2DA;
+  --input: #E5E2DA;
+  --ring: #8B7355;
+  --radius: 0.5rem;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+::selection {
+  background: #8B7355;
+  color: #FFFFFF;
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.section-padding {
+  padding-top: 5rem;
+  padding-bottom: 5rem;
+}
+
+@media (min-width: 768px) {
+  .section-padding {
+    padding-top: 7rem;
+    padding-bottom: 7rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .section-padding {
+    padding-top: 8rem;
+    padding-bottom: 8rem;
+  }
+}
+
+/* Card system */
+.card-solid {
+  background: #FFFFFF;
+  border: 1px solid #E5E2DA;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.card-solid:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.card-bordered {
+  background: transparent;
+  border: 1px solid #E5E2DA;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.card-bordered:hover {
+  border-color: #8B7355;
+  transform: translateY(-1px);
+}
+
+/* Glass — used sparingly on dark surfaces only */
+.glass-dark {
+  background: rgba(26, 24, 22, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(229, 226, 218, 0.6);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+/* Premium textures */
+.texture-paper {
+  background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+.texture-concrete {
+  background-color: #F1EFE9;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(200, 195, 185, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(200, 195, 185, 0.1) 0%, transparent 40%);
+}
+
+.texture-grain {
+  position: relative;
+}
+
+.texture-grain::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Section backgrounds */
+.bg-section-ivory {
+  background-color: #F8F7F4;
+}
+
+.bg-section-linen {
+  background-color: #F1EFE9;
+}
+
+.bg-section-white {
+  background-color: #FFFFFF;
+}
+
+/* Subtle gradient overlays */
+.gradient-subtle {
+  background: linear-gradient(180deg, rgba(248,247,244,0) 0%, rgba(241,239,233,0.5) 100%);
+}
+
+/* Grid pattern — used sparingly */
+.pattern-grid {
+  background-image:
+    linear-gradient(rgba(139,115,85,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139,115,85,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* 3D perspective container */
+.perspective-container {
+  perspective: 1200px;
+}
+
+.perspective-card {
+  transform: rotateX(1deg) rotateY(-0.5deg);
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.perspective-card:hover {
+  transform: rotateX(0deg) rotateY(0deg) translateY(-4px);
+}
+
+/* Depth layers */
+.depth-layer-1 {
+  transform: translateZ(0);
+}
+
+.depth-layer-2 {
+  transform: translateZ(10px);
+}
+
+.depth-layer-3 {
+  transform: translateZ(20px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .perspective-card {
+    transform: none;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid #8B7355;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #8B7355;
+  outline-offset: 2px;
+}
+
+/* Hide scrollbar for horizontal scroll sections */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Card entrance animation */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+/* Timeline line draw animation */
+@keyframes line-draw {
+  from { height: 0; }
+  to { height: 100%; }
+}
+.timeline-line {
+  animation: line-draw 2s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+/* Timeline node pulse */
+@keyframes node-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 115, 85, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(139, 115, 85, 0); }
+}
+.timeline-node {
+  animation: node-pulse 2.5s ease-in-out infinite;
+}
+
+/* Alternating step entrance */
+@keyframes step-enter-left {
+  from { opacity: 0; transform: translateX(-40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes step-enter-right {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.step-enter-left {
+  animation: step-enter-left 0.7s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+.step-enter-right {
+  animation: step-enter-right 0.7s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+/* Splash screen CSS fallback — hides even if JS hydration fails */
+@keyframes splash-auto-hide {
+  to { opacity: 0; pointer-events: none; visibility: hidden; }
+}
