@@ -41,12 +41,18 @@ export function ServicesOverview() {
         <StaggerChildren staggerDelay={0.05} className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {SERVICES.map((service, i) => {
             const imgSrc = serviceImages[service.slug];
+            const isFeatured = service.slug === "battery-regeneration";
             return (
-              <StaggerItem key={i}>
+              <StaggerItem key={i} className={isFeatured ? "sm:col-span-2 lg:col-span-2" : ""}>
                 <Link href={`/services/${service.slug}`} className="group block h-full">
-                  <div className="card-solid flex h-full flex-col overflow-hidden">
+                  <div className={`card-solid flex h-full flex-col overflow-hidden ${isFeatured ? "relative border-2 border-bronze/20 bg-gradient-to-br from-white-pure to-bronze/5" : ""}`}>
+                    {isFeatured && (
+                      <div className="absolute right-4 top-4 z-10 rounded-full bg-bronze/10 px-3 py-1 text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-bronze backdrop-blur-sm">
+                        Our Specialty
+                      </div>
+                    )}
                     {imgSrc && (
-                      <div className="relative h-48 overflow-hidden">
+                      <div className={`relative overflow-hidden ${isFeatured ? "h-64" : "h-48"}`}>
                         <Image
                           src={imgSrc}
                           alt={service.title}
@@ -58,7 +64,7 @@ export function ServicesOverview() {
                       </div>
                     )}
                     <div className="flex flex-1 flex-col p-5">
-                      <h3 className="mb-1.5 text-[1rem] font-semibold text-ink group-hover:text-bronze transition-colors duration-200">
+                      <h3 className={`mb-1.5 font-semibold text-ink group-hover:text-bronze transition-colors duration-200 ${isFeatured ? "text-[1.125rem]" : "text-[1rem]"}`}>
                         {service.title}
                       </h3>
                       <p className="mb-4 flex-1 text-[0.8125rem] leading-[1.6] text-stone">

@@ -67,20 +67,20 @@ export function BookingForm() {
                 Book Your Appointment
               </p>
               <h2 className="mb-5 font-serif text-[2rem] leading-[1.15] text-ink sm:text-[2.5rem]">
-                Free Battery
+                Battery Regeneration
                 <br />
                 Health Check
               </h2>
               <p className="mb-8 max-w-[400px] text-[1rem] leading-[1.7] text-stone">
                 Get a comprehensive diagnostic report with honest
-                recommendations. No obligation. No sales pressure.
+                recommendations. Restore performance — or know exactly when to replace.
               </p>
 
               <div className="space-y-4">
                 {[
                   "14-point battery diagnostic inspection",
                   "Digital health report delivered to your inbox",
-                  "Honest recommendation — only if service is needed",
+                  "Regeneration assessment — restore before replacing",
                   "Zero obligation — completely free for new customers",
                 ].map((text, i) => (
                   <div key={i} className="flex items-center gap-3">
@@ -165,8 +165,8 @@ export function BookingForm() {
                       className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-2.5 text-[0.875rem] text-ink focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10"
                     >
                       <option value="">Select a service</option>
+                      <option value="battery-regeneration">Battery Regeneration (Restore Performance)</option>
                       <option value="battery-health-check">Free Battery Health Check</option>
-                      <option value="battery-regeneration">Battery Regeneration</option>
                       <option value="battery-diagnostics">Battery Diagnostics</option>
                       <option value="car-service">Car Service</option>
                       <option value="doorstep-service">Doorstep Service</option>
@@ -207,7 +207,7 @@ export function BookingForm() {
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-6 py-3.5 text-[0.875rem] font-semibold text-white-pure transition-all duration-200 hover:bg-graphite active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send size={14} />
-                {submitting ? "Submitting..." : "Book Free Health Check"}
+                {submitting ? "Submitting..." : "Book Free Battery Check"}
               </button>
 
               {submitError && (

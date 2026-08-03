@@ -17,11 +17,11 @@ export function FinalCTA() {
         <FadeInView>
           <div className="mx-auto max-w-[640px] text-center">
             <h2 className="font-serif text-[2rem] leading-[1.15] text-ink sm:text-[2.5rem] lg:text-[2.75rem]">
-              Your Battery Deserves a Diagnosis, Not a Guess
+              Your Battery Deserves Restoration, Not Replacement
             </h2>
             <p className="mt-5 text-[1.0625rem] leading-[1.7] text-stone">
-              Book a free battery health check. Get a digital report. Decide
-              with confidence.
+              Book a free battery health check. Get a digital report. Restore
+              performance — or know exactly when to replace.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button href="/#book" size="lg" variant="glass">

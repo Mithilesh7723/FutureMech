@@ -244,17 +244,17 @@ export function HeroScrub({ frameCount, frameUrl }: HeroScrubProps) {
           >
             <div className="max-w-[440px]">
               <p className="mb-4 text-[0.75rem] font-semibold uppercase tracking-[0.2em] text-bronze">
-                Diagnostic-First Automotive Care
+                Battery Regeneration Experts
               </p>
               <h1 className="font-serif text-[3.25rem] leading-[1.08] text-ink lg:text-[4rem]">
-                We Don&apos;t Sell.
+                We Don&apos;t Replace.
                 <br />
-                <span className="text-bronze">We Diagnose.</span>
+                <span className="text-bronze">We Restore.</span>
               </h1>
               <p className="mt-7 max-w-[380px] text-[1rem] leading-[1.8] text-graphite">
-                Battery health reports, not sales pitches. 14-point digital
-                diagnostics with transparent recommendations and proof of
-                every service.
+                Battery regeneration that restores performance without
+                replacement. 14-point digital diagnostics, transparent
+                recommendations, and proof of every service.
               </p>
               <div className="mt-9 flex flex-wrap gap-3">
                 <button
@@ -355,7 +355,7 @@ export function HeroScrub({ frameCount, frameUrl }: HeroScrubProps) {
             transition={{ delay: 0.2, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
             className="mb-4 text-[0.5625rem] font-semibold uppercase tracking-[0.28em] text-bronze"
           >
-            Diagnostic-First Automotive Care
+            Battery Regeneration Experts
           </motion.p>
 
           {/* Headline */}
@@ -365,9 +365,9 @@ export function HeroScrub({ frameCount, frameUrl }: HeroScrubProps) {
             transition={{ delay: 0.35, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
             className="font-serif text-[3rem] leading-[0.92] tracking-[-0.02em] text-white-pure sm:text-[3.5rem]"
           >
-            We Don&apos;t Sell.
+            We Don&apos;t Replace.
             <br />
-            <span className="text-bronze">We Diagnose.</span>
+            <span className="text-bronze">We Restore.</span>
           </motion.h1>
 
           {/* Bronze divider */}
@@ -385,7 +385,7 @@ export function HeroScrub({ frameCount, frameUrl }: HeroScrubProps) {
             transition={{ delay: 0.75, duration: 0.6 }}
             className="mt-4 max-w-[260px] text-[0.8125rem] leading-[1.65] text-white-pure/45"
           >
-            Battery health reports, not sales pitches. Transparent diagnostics you can trust.
+            Battery regeneration that restores performance. Transparent diagnostics you can trust.
           </motion.p>
 
           {/* CTA buttons — clean, no glass card, just buttons */}
