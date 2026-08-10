@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { fetchLeads, updateLeadStatus, deleteLead } from "@/lib/leads-store";
+import { fetchAuditLogs } from "@/lib/audit-log";
 import {
   Search,
   Filter,
@@ -22,6 +23,8 @@ import {
   Users,
   Loader2,
   Check,
+  Shield,
+  Skull,
 } from "lucide-react";
 
 type LeadStatus = "new" | "viewed" | "contacted" | "converted" | "lost";
@@ -231,6 +234,10 @@ export default function AdminPage() {
 
   const [detailLead, setDetailLead] = useState<Lead | null>(null);
 
+  const [activeTab, setActiveTab] = useState<"leads" | "audit">("leads");
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+
   const [toast, setToast] = useState<{
     message: string;
     type: "success" | "error";
@@ -257,9 +264,24 @@ export default function AdminPage() {
     }
   };
 
+  const loadAuditLogs = async () => {
+    setAuditLoading(true);
+    try {
+      const data = await fetchAuditLogs();
+      setAuditLogs(data as any[]);
+    } catch {
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (user) loadLeads();
   }, [user]);
+
+  useEffect(() => {
+    if (user && activeTab === "audit") loadAuditLogs();
+  }, [user, activeTab]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter((lead) => {
@@ -559,213 +581,360 @@ export default function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {[
-            { label: "Total", value: stats.total, color: "text-[#8B6914]" },
-            { label: "New", value: stats.new, color: "text-blue-600" },
-            { label: "Viewed", value: stats.viewed, color: "text-amber-600" },
-            { label: "Contacted", value: stats.contacted, color: "text-purple-600" },
-            { label: "Converted", value: stats.converted, color: "text-emerald-600" },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-xl border border-[#D4C4A8]/60 bg-white p-4 shadow-sm"
+        <div className="mb-6 flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab("leads")}
+            className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all border ${
+              activeTab === "leads"
+                ? "bg-[#8B6914] text-white border-[#8B6914] shadow-md"
+                : "bg-white text-[#8B6914]/70 border-[#D4C4A8]/60 hover:border-[#8B6914]/40 hover:bg-[#F5F0E8]"
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            Leads
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                activeTab === "leads"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#8B6914]/10 text-[#8B6914]"
+              }`}
             >
-              <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider">
-                {stat.label}
-              </p>
-              <p className={`mt-1 text-2xl font-bold ${stat.color}`}>
-                {stat.value}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B6914]/40" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, phone, vehicle..."
-              className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white py-2 pl-10 pr-4 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B6914]/40 hover:text-[#8B6914]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Dropdown
-              value={statusFilter}
-              onChange={setStatusFilter}
-              placeholder="Status"
-              options={[
-                { value: "new", label: "New" },
-                { value: "viewed", label: "Viewed" },
-                { value: "contacted", label: "Contacted" },
-                { value: "converted", label: "Converted" },
-                { value: "lost", label: "Lost" },
-              ]}
-            />
-            <Dropdown
-              value={serviceFilter}
-              onChange={setServiceFilter}
-              placeholder="Service"
-              options={Object.entries(SERVICE_LABELS).map(([value, label]) => ({
-                value,
-                label,
-              }))}
-            />
-            {(statusFilter || serviceFilter || search) && (
-              <button
-                onClick={() => {
-                  setStatusFilter("");
-                  setServiceFilter("");
-                  setSearch("");
-                }}
-                className="flex items-center gap-1 rounded-lg border border-[#D4C4A8]/60 bg-white px-3 py-2 text-xs font-medium text-[#2C1810] hover:bg-[#F5F0E8] transition-colors"
-              >
-                <X className="h-3 w-3" />
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-2.5 shadow-sm">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allVisibleSelected}
-              onChange={toggleSelectAll}
-              className="h-4 w-4 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
-            />
-            <span className="text-xs text-[#8B6914]/60">
-              {selected.size > 0
-                ? `${selected.size} selected`
-                : `Select all (${filteredLeads.length})`}
+              {leads.length}
             </span>
-          </label>
-
-          {selected.size > 0 && (
-            <>
-              <div className="h-4 w-px bg-[#D4C4A8]/60" />
-              <Dropdown
-                value={bulkStatus}
-                onChange={(v) => setBulkStatus(v as LeadStatus)}
-                placeholder="Set status"
-                options={[
-                  { value: "new", label: "New" },
-                  { value: "viewed", label: "Viewed" },
-                  { value: "contacted", label: "Contacted" },
-                  { value: "converted", label: "Converted" },
-                  { value: "lost", label: "Lost" },
-                ]}
-              />
-              <button
-                onClick={handleBulkStatus}
-                className="flex items-center gap-1.5 rounded-lg bg-[#8B6914] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A07A1A] transition-colors"
-              >
-                <Check className="h-3 w-3" />
-                Apply
-              </button>
-              <button
-                onClick={handleBulkDelete}
-                className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
-              >
-                <Trash2 className="h-3 w-3" />
-                Delete
-              </button>
-            </>
-          )}
+          </button>
+          <button
+            onClick={() => setActiveTab("audit")}
+            className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition-all border ${
+              activeTab === "audit"
+                ? "bg-[#8B6914] text-white border-[#8B6914] shadow-md"
+                : "bg-white text-[#8B6914]/70 border-[#D4C4A8]/60 hover:border-[#8B6914]/40 hover:bg-[#F5F0E8]"
+            }`}
+          >
+            <Shield className="h-4 w-4" />
+            Audit Log
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                activeTab === "audit"
+                  ? "bg-white/20 text-white"
+                  : "bg-[#8B6914]/10 text-[#8B6914]"
+              }`}
+            >
+              {auditLogs.length}
+            </span>
+          </button>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-[#8B6914]" />
-          </div>
-        ) : error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-            <XCircle className="mx-auto h-8 w-8 text-red-400" />
-            <p className="mt-2 text-sm text-red-700">{error}</p>
-            <button
-              onClick={loadLeads}
-              className="mt-3 text-sm font-medium text-red-700 underline underline-offset-2 hover:text-red-900"
-            >
-              Retry
-            </button>
-          </div>
-        ) : filteredLeads.length === 0 ? (
-          <div className="rounded-xl border border-[#D4C4A8]/60 bg-white p-12 text-center shadow-sm">
-            <Users className="mx-auto h-10 w-10 text-[#8B6914]/30" />
-            <p className="mt-3 text-sm text-[#8B6914]/60">No leads found</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredLeads.map((lead) => (
-              <div
-                key={lead.id}
-                className="group relative flex items-center gap-4 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-3 shadow-sm hover:border-[#8B6914]/30 hover:shadow-md transition-all"
-              >
+        {activeTab === "leads" && (
+          <>
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+              {[
+                { label: "Total", value: stats.total, color: "text-[#8B6914]" },
+                { label: "New", value: stats.new, color: "text-blue-600" },
+                { label: "Viewed", value: stats.viewed, color: "text-amber-600" },
+                { label: "Contacted", value: stats.contacted, color: "text-purple-600" },
+                { label: "Converted", value: stats.converted, color: "text-emerald-600" },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-xl border border-[#D4C4A8]/60 bg-white p-4 shadow-sm"
+                >
+                  <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                  <p className={`mt-1 text-2xl font-bold ${stat.color}`}>
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B6914]/40" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, email, phone, vehicle..."
+                  className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white py-2 pl-10 pr-4 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
+                />
+                {search && (
+                  <button
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B6914]/40 hover:text-[#8B6914]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Dropdown
+                  value={statusFilter}
+                  onChange={setStatusFilter}
+                  placeholder="Status"
+                  options={[
+                    { value: "new", label: "New" },
+                    { value: "viewed", label: "Viewed" },
+                    { value: "contacted", label: "Contacted" },
+                    { value: "converted", label: "Converted" },
+                    { value: "lost", label: "Lost" },
+                  ]}
+                />
+                <Dropdown
+                  value={serviceFilter}
+                  onChange={setServiceFilter}
+                  placeholder="Service"
+                  options={Object.entries(SERVICE_LABELS).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                />
+                {(statusFilter || serviceFilter || search) && (
+                  <button
+                    onClick={() => {
+                      setStatusFilter("");
+                      setServiceFilter("");
+                      setSearch("");
+                    }}
+                    className="flex items-center gap-1 rounded-lg border border-[#D4C4A8]/60 bg-white px-3 py-2 text-xs font-medium text-[#2C1810] hover:bg-[#F5F0E8] transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                    Clear
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-2.5 shadow-sm">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  checked={selected.has(lead.id)}
-                  onChange={() => toggleSelect(lead.id)}
-                  className="h-4 w-4 shrink-0 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
+                  checked={allVisibleSelected}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
                 />
+                <span className="text-xs text-[#8B6914]/60">
+                  {selected.size > 0
+                    ? `${selected.size} selected`
+                    : `Select all (${filteredLeads.length})`}
+                </span>
+              </label>
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-semibold text-[#2C1810] truncate">
-                      {lead.name}
-                    </h3>
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[lead.status]}`}
-                    >
-                      {STATUS_LABELS[lead.status]}
-                    </span>
-                    <span className="inline-flex items-center rounded-full border border-[#D4C4A8]/60 bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-medium text-[#8B6914]">
-                      {SERVICE_LABELS[lead.service] || lead.service}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center gap-4 text-xs text-[#8B6914]/60 flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Phone className="h-3 w-3" />
-                      {lead.phone}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      {lead.email}
-                    </span>
-                    {lead.vehicle && (
-                      <span className="flex items-center gap-1">
-                        <Car className="h-3 w-3" />
-                        {lead.vehicle}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {fmtDate(lead.createdAt)}
-                    </span>
-                  </div>
-                </div>
+              {selected.size > 0 && (
+                <>
+                  <div className="h-4 w-px bg-[#D4C4A8]/60" />
+                  <Dropdown
+                    value={bulkStatus}
+                    onChange={(v) => setBulkStatus(v as LeadStatus)}
+                    placeholder="Set status"
+                    options={[
+                      { value: "new", label: "New" },
+                      { value: "viewed", label: "Viewed" },
+                      { value: "contacted", label: "Contacted" },
+                      { value: "converted", label: "Converted" },
+                      { value: "lost", label: "Lost" },
+                    ]}
+                  />
+                  <button
+                    onClick={handleBulkStatus}
+                    className="flex items-center gap-1.5 rounded-lg bg-[#8B6914] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A07A1A] transition-colors"
+                  >
+                    <Check className="h-3 w-3" />
+                    Apply
+                  </button>
+                  <button
+                    onClick={handleBulkDelete}
+                    className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </button>
+                </>
+              )}
+            </div>
 
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-6 w-6 animate-spin text-[#8B6914]" />
+              </div>
+            ) : error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+                <XCircle className="mx-auto h-8 w-8 text-red-400" />
+                <p className="mt-2 text-sm text-red-700">{error}</p>
                 <button
-                  onClick={() => setDetailLead(lead)}
-                  className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[#D4C4A8]/60 px-3 py-1.5 text-xs font-medium text-[#2C1810] hover:bg-[#8B6914]/5 hover:border-[#8B6914]/30 opacity-0 group-hover:opacity-100 transition-all"
+                  onClick={loadLeads}
+                  className="mt-3 text-sm font-medium text-red-700 underline underline-offset-2 hover:text-red-900"
                 >
-                  <Eye className="h-3.5 w-3.5" />
-                  View
+                  Retry
                 </button>
               </div>
-            ))}
-          </div>
+            ) : filteredLeads.length === 0 ? (
+              <div className="rounded-xl border border-[#D4C4A8]/60 bg-white p-12 text-center shadow-sm">
+                <Users className="mx-auto h-10 w-10 text-[#8B6914]/30" />
+                <p className="mt-3 text-sm text-[#8B6914]/60">No leads found</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredLeads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    className="group relative flex items-center gap-4 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-3 shadow-sm hover:border-[#8B6914]/30 hover:shadow-md transition-all"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected.has(lead.id)}
+                      onChange={() => toggleSelect(lead.id)}
+                      className="h-4 w-4 shrink-0 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
+                    />
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-semibold text-[#2C1810] truncate">
+                          {lead.name}
+                        </h3>
+                        <span
+                          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[lead.status]}`}
+                        >
+                          {STATUS_LABELS[lead.status]}
+                        </span>
+                        <span className="inline-flex items-center rounded-full border border-[#D4C4A8]/60 bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-medium text-[#8B6914]">
+                          {SERVICE_LABELS[lead.service] || lead.service}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex items-center gap-4 text-xs text-[#8B6914]/60 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {lead.phone}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Mail className="h-3 w-3" />
+                          {lead.email}
+                        </span>
+                        {lead.vehicle && (
+                          <span className="flex items-center gap-1">
+                            <Car className="h-3 w-3" />
+                            {lead.vehicle}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {fmtDate(lead.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => setDetailLead(lead)}
+                      className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[#D4C4A8]/60 px-3 py-1.5 text-xs font-medium text-[#2C1810] hover:bg-[#8B6914]/5 hover:border-[#8B6914]/30 opacity-0 group-hover:opacity-100 transition-all"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      View
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === "audit" && (
+          <>
+            {auditLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-6 w-6 animate-spin text-[#8B6914]" />
+              </div>
+            ) : (
+              <>
+                <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Total Attempts", value: auditLogs.length, color: "text-[#8B6914]" },
+                    { label: "Successful", value: auditLogs.filter((l: any) => l.action === "login_success" || l.action === "google_login_success").length, color: "text-emerald-600" },
+                    { label: "Failed", value: auditLogs.filter((l: any) => l.action === "login_failed" || l.action === "google_login_blocked").length, color: "text-red-600" },
+                    { label: "Attacks", value: auditLogs.filter((l: any) => l.action === "injection_attempt").length, color: "text-red-700" },
+                  ].map((stat) => (
+                    <div
+                      key={stat.label}
+                      className="rounded-xl border border-[#D4C4A8]/60 bg-white p-4 shadow-sm"
+                    >
+                      <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider">
+                        {stat.label}
+                      </p>
+                      <p className={`mt-1 text-2xl font-bold ${stat.color}`}>
+                        {stat.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {auditLogs.length === 0 ? (
+                  <div className="rounded-xl border border-[#D4C4A8]/60 bg-white p-12 text-center shadow-sm">
+                    <Shield className="mx-auto h-10 w-10 text-[#8B6914]/30" />
+                    <p className="mt-3 text-sm text-[#8B6914]/60">No audit logs yet</p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-[#D4C4A8]/60 bg-white shadow-sm overflow-hidden">
+                    <div className="max-h-[60vh] overflow-y-auto">
+                      <table className="w-full">
+                        <thead className="sticky top-0 bg-[#F5F0E8]/80 backdrop-blur-sm border-b border-[#D4C4A8]/60">
+                          <tr>
+                            <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#8B6914]/60 uppercase tracking-wider">Time</th>
+                            <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#8B6914]/60 uppercase tracking-wider">Action</th>
+                            <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#8B6914]/60 uppercase tracking-wider">Email</th>
+                            <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#8B6914]/60 uppercase tracking-wider">IP</th>
+                            <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#8B6914]/60 uppercase tracking-wider">Field</th>
+                            <th className="px-4 py-3 text-left text-[10px] font-semibold text-[#8B6914]/60 uppercase tracking-wider">Message</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#D4C4A8]/40">
+                          {auditLogs.map((log: any, i: number) => {
+                            const actionStyles: Record<string, string> = {
+                              login_success: "bg-emerald-100 text-emerald-700 border-emerald-200",
+                              login_failed: "bg-red-100 text-red-700 border-red-200",
+                              google_login_success: "bg-blue-100 text-blue-700 border-blue-200",
+                              google_login_blocked: "bg-red-100 text-red-700 border-red-200",
+                              injection_attempt: "bg-red-100 text-red-700 border-red-200",
+                            };
+                            const actionLabels: Record<string, string> = {
+                              login_success: "Login OK",
+                              login_failed: "Login Failed",
+                              google_login_success: "Google OK",
+                              google_login_blocked: "Google Blocked",
+                              injection_attempt: "Injection",
+                            };
+                            return (
+                              <tr key={i} className="hover:bg-[#F5F0E8]/50 transition-colors">
+                                <td className="px-4 py-3 text-xs text-[#8B6914]/60 whitespace-nowrap">
+                                  {fmtDate(log.timestamp || log.createdAt)}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${actionStyles[log.action] || "bg-gray-100 text-gray-700 border-gray-200"}`}>
+                                    {log.action === "injection_attempt" && <Skull className="h-3 w-3" />}
+                                    {actionLabels[log.action] || log.action}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-[#2C1810] max-w-[200px] truncate">
+                                  {log.email || "—"}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-[#8B6914]/60 font-mono whitespace-nowrap">
+                                  {log.ip || "—"}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-[#8B6914]/60">
+                                  {log.field || "—"}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-[#8B6914]/60 max-w-[250px] truncate">
+                                  {log.message || "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
       </main>
 

@@ -1,11 +1,19 @@
 import { NextResponse } from "next/server";
 import { addLead } from "@/lib/leads-store";
+import { scanForAttacks, getAttackResponse } from "@/lib/security";
+import { logAudit } from "@/lib/audit-log";
 
 const MAX_NAME = 100;
 const MAX_PHONE = 15;
 const MAX_EMAIL = 254;
 const MAX_MESSAGE = 2000;
 const MAX_VEHICLE = 100;
+
+function getClientIP(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return request.headers.get("x-real-ip") || "unknown";
+}
 
 function sanitizeShort(str: unknown, max: number): string {
   if (typeof str !== "string") return "";
@@ -18,8 +26,18 @@ function sanitize(str: unknown): string {
 }
 
 export async function POST(request: Request) {
+  const ip = getClientIP(request);
+  const userAgent = request.headers.get("user-agent") || "";
+
   try {
     const body = await request.json();
+
+    const { attacked, field } = scanForAttacks(body);
+    if (attacked) {
+      await logAudit({ action: "injection_attempt", ip, userAgent, field, message: `Injection in field: ${field}` });
+      return getAttackResponse(ip, field);
+    }
+
     const { name, phone, email, service, vehicle, message } = body;
     if (!name || !phone || !email) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });

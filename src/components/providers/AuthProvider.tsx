@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -12,6 +12,16 @@ import {
 import { auth, googleProvider } from "@/lib/firebase";
 
 const ALLOWED_EMAIL = "sukhrajsingh7773@gmail.com";
+
+async function auditLog(action: string, email?: string, extra?: string) {
+  try {
+    await fetch("/api/audit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, email, message: extra }),
+    });
+  } catch {}
+}
 
 interface AuthCtx {
   user: User | null;
@@ -45,42 +55,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsub;
   }, []);
 
-  const loginEmail = async (email: string, password: string): Promise<string> => {
+  const loginEmail = useCallback(async (email: string, password: string): Promise<string> => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      await auditLog("login_success", email);
       return "";
     } catch (e: any) {
+      await auditLog("login_failed", email, e.code);
       if (e.code === "auth/invalid-credential") return "Invalid email or password";
       if (e.code === "auth/user-not-found") return "No account found with this email.";
       return "Login failed. Try again.";
     }
-  };
+  }, []);
 
-  const loginGoogle = async (): Promise<string> => {
+  const loginGoogle = useCallback(async (): Promise<string> => {
     try {
       googleProvider.setCustomParameters({ prompt: "select_account" });
       const result = await signInWithPopup(auth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      const email = result.user.email;
+      const email = result.user.email || "";
 
-      // Block non-allowed accounts
       if (email !== ALLOWED_EMAIL) {
+        await auditLog("google_login_blocked", email, "Non-allowed Google account");
         await signOut(auth);
         return "Access denied. Only authorized account allowed.";
       }
 
-      // Check if this is a newly created account (signup attempt)
       const creationTime = result.user.metadata.creationTime;
       const lastSignInTime = result.user.metadata.lastSignInTime;
       if (creationTime === lastSignInTime) {
-        // This is a new account — delete it and sign out
-        try {
-          await result.user.delete();
-        } catch {}
+        await auditLog("google_login_blocked", email, "New account signup attempt — deleted");
+        try { await result.user.delete(); } catch {}
         await signOut(auth);
         return "Signup not allowed. Contact admin.";
       }
 
+      await auditLog("google_login_success", email);
       return "";
     } catch (e: any) {
       if (e.code === "auth/popup-closed-by-user") return "";
@@ -89,11 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return "Google sign-in failed.";
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await signOut(auth);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, loginEmail, loginGoogle, logout }}>
