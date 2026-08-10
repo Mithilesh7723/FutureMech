@@ -1,11 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import Image from "next/image";
-import Link from "next/link";
-import { Search, X, Phone, Mail, Car, MessageSquare, Clock, Eye, PhoneCall, CheckCircle, XCircle, Trash2, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { fetchLeads, updateLeadStatus, deleteLead } from "@/lib/leads-store";
+import {
+  Search,
+  Filter,
+  X,
+  ChevronDown,
+  Trash2,
+  Eye,
+  Mail,
+  Phone,
+  Car,
+  Calendar,
+  Clock,
+  LogOut,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Users,
+  Loader2,
+  Check,
+} from "lucide-react";
 
 type LeadStatus = "new" | "viewed" | "contacted" | "converted" | "lost";
 
@@ -22,6 +39,18 @@ interface Lead {
   updatedAt: string;
 }
 
+const SERVICE_LABELS: Record<string, string> = {
+  "car-service": "Car Service",
+  "denting-painting": "Denting & Painting",
+  "ac-service": "AC Service",
+  battery: "Battery",
+  tyres: "Tyres",
+  insurance: "Insurance",
+  "car-wash": "Car Wash",
+  detailing: "Detailing",
+  other: "Other",
+};
+
 const STATUS_LABELS: Record<LeadStatus, string> = {
   new: "New",
   viewed: "Viewed",
@@ -31,312 +60,605 @@ const STATUS_LABELS: Record<LeadStatus, string> = {
 };
 
 const STATUS_COLORS: Record<LeadStatus, string> = {
-  new: "bg-amber-100 text-amber-800",
-  viewed: "bg-blue-50 text-blue-700",
-  contacted: "bg-emerald-50 text-emerald-700",
-  converted: "bg-graphite/10 text-graphite",
-  lost: "bg-stone-100 text-stone-500",
+  new: "bg-blue-100 text-blue-700 border-blue-200",
+  viewed: "bg-amber-100 text-amber-700 border-amber-200",
+  contacted: "bg-purple-100 text-purple-700 border-purple-200",
+  converted: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  lost: "bg-red-100 text-red-700 border-red-200",
 };
 
-const SERVICE_LABELS: Record<string, string> = {
-  "battery-health-check": "Battery Health Check",
-  "battery-regeneration": "Battery Regeneration",
-  "battery-diagnostics": "Battery Diagnostics",
-  "car-service": "Car Service",
-  "doorstep-service": "Doorstep Service",
-  "fleet-maintenance": "Fleet Maintenance",
-  "pdi": "Pre-Delivery Inspection",
-  "other": "Other",
-};
-
-const AUTH_USER = "admin";
-const AUTH_PASS = "admin";
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+function fmtDate(d: string) {
+  if (!d) return "\u2014";
+  try {
+    return new Date(d).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return d;
+  }
 }
 
-function normalizeLead(raw: Record<string, unknown>): Lead {
-  return {
-    id: raw.id as string,
-    name: raw.name as string,
-    phone: raw.phone as string,
-    email: raw.email as string,
-    service: (raw.service as string) || "",
-    vehicle: (raw.vehicle as string) || "",
-    message: (raw.message as string) || "",
-    status: (raw.status as LeadStatus) || "new",
-    createdAt: raw.createdAt as string,
-    updatedAt: (raw.updatedAt as string) || (raw.createdAt as string),
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 text-sm">
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-[#8B6914]" />
+      <div>
+        <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider">
+          {label}
+        </p>
+        {href ? (
+          <a
+            href={href}
+            className="text-[#2C1810] hover:text-[#8B6914] transition-colors underline underline-offset-2"
+          >
+            {value}
+          </a>
+        ) : (
+          <p className="text-[#2C1810]">{value || "\u2014"}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ActionBtn({
+  icon: Icon,
+  label,
+  color,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  color: string;
+  onClick: () => void;
+}) {
+  const colorMap: Record<string, string> = {
+    blue: "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200",
+    purple:
+      "bg-purple-50 text-purple-700 hover:bg-purple-100 border-purple-200",
+    green:
+      "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200",
+    red: "bg-red-50 text-red-700 hover:bg-red-100 border-red-200",
+    gray: "bg-gray-50 text-gray-700 hover:bg-gray-100 border-gray-200",
   };
+
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all ${colorMap[color] || colorMap.gray}`}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+    </button>
+  );
 }
 
-async function api<T>(url: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...opts,
-    headers: { "Content-Type": "application/json", ...opts?.headers },
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  return res.json();
+function Dropdown({
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-2 rounded-lg border border-[#D4C4A8]/60 bg-white px-3 py-2 text-sm text-[#2C1810] hover:border-[#8B6914]/40 transition-colors"
+      >
+        <Filter className="h-4 w-4 text-[#8B6914]/60" />
+        {selected?.label || placeholder}
+        <ChevronDown
+          className={`h-4 w-4 text-[#8B6914]/60 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 z-20 mt-1 min-w-[160px] rounded-lg border border-[#D4C4A8]/60 bg-white py-1 shadow-lg">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              className="w-full px-3 py-2 text-left text-sm text-[#2C1810] hover:bg-[#8B6914]/5 transition-colors"
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function AdminPage() {
-  const [auth, setAuth] = useState(false);
-  const [username, setUsername] = useState("");
-  const [pw, setPw] = useState("");
-  const [pwErr, setPwErr] = useState("");
-  const [attempts, setAttempts] = useState(0);
-  const [locked, setLocked] = useState(false);
-  const [lockTimer, setLockTimer] = useState(0);
+  const {
+    loginEmail,
+    loginGoogle,
+    logout,
+    user,
+    loading: authLoading,
+  } = useAuth();
+
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-  const [fStatus, setFStatus] = useState("");
-  const [fService, setFService] = useState("");
-  const [open, setOpen] = useState<Lead | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [serviceFilter, setServiceFilter] = useState("");
+
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState<LeadStatus | "">("");
+  const [bulkStatus, setBulkStatus] = useState<LeadStatus>("new");
 
-  const flash = useCallback((msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }, []);
+  const [detailLead, setDetailLead] = useState<Lead | null>(null);
 
-  const login = useCallback(() => {
-    if (locked) return;
-    if (username.trim() === AUTH_USER && pw === AUTH_PASS) {
-      setAuth(true);
-      setPwErr("");
-      setAttempts(0);
-    } else {
-      const next = attempts + 1;
-      setAttempts(next);
-      setPwErr("Invalid username or password");
-      if (next >= 5) {
-        setLocked(true);
-        setPwErr("Too many attempts. Locked for 60 seconds.");
-        let remaining = 60;
-        setLockTimer(remaining);
-        const interval = setInterval(() => {
-          remaining--;
-          setLockTimer(remaining);
-          if (remaining <= 0) {
-            clearInterval(interval);
-            setLocked(false);
-            setAttempts(0);
-            setPwErr("");
-          }
-        }, 1000);
-      }
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  const showToast = (
+    message: string,
+    type: "success" | "error" = "success",
+  ) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const loadLeads = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await fetchLeads();
+      setLeads(data as Lead[]);
+    } catch (err: any) {
+      setError(err.message || "Failed to load leads");
+    } finally {
+      setLoading(false);
     }
-  }, [username, pw, attempts, locked]);
+  };
 
   useEffect(() => {
-    if (!auth) return;
-    setLoading(true);
-    api<Record<string, unknown>[]>("/api/leads")
-      .then((d) => { setLeads(d.map(normalizeLead)); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [auth]);
+    if (user) loadLeads();
+  }, [user]);
 
-  const filtered = useMemo(() => {
-    let r = leads;
-    if (fStatus) r = r.filter((l) => l.status === fStatus);
-    if (fService) r = r.filter((l) => l.service === fService);
-    if (q.trim()) {
-      const s = q.toLowerCase();
-      r = r.filter((l) => l.name.toLowerCase().includes(s) || l.phone.includes(s) || l.email.toLowerCase().includes(s));
-    }
-    return r;
-  }, [leads, q, fStatus, fService]);
+  const filteredLeads = useMemo(() => {
+    return leads.filter((lead) => {
+      const q = search.toLowerCase();
+      const matchSearch =
+        !q ||
+        lead.name.toLowerCase().includes(q) ||
+        lead.email.toLowerCase().includes(q) ||
+        lead.phone.includes(q) ||
+        lead.vehicle.toLowerCase().includes(q) ||
+        lead.service.toLowerCase().includes(q);
+      const matchStatus = !statusFilter || lead.status === statusFilter;
+      const matchService = !serviceFilter || lead.service === serviceFilter;
+      return matchSearch && matchStatus && matchService;
+    });
+  }, [leads, search, statusFilter, serviceFilter]);
 
   const stats = useMemo(() => {
-    const c: Record<LeadStatus, number> = { new: 0, viewed: 0, contacted: 0, converted: 0, lost: 0 };
-    leads.forEach((l) => c[l.status]++);
-    return c;
+    const total = leads.length;
+    const newCount = leads.filter((l) => l.status === "new").length;
+    const viewed = leads.filter((l) => l.status === "viewed").length;
+    const contacted = leads.filter((l) => l.status === "contacted").length;
+    const converted = leads.filter((l) => l.status === "converted").length;
+    return { total, new: newCount, viewed, contacted, converted };
   }, [leads]);
 
-  const setStatus = useCallback(async (id: string, status: LeadStatus) => {
-    try {
-      const raw = await api<Record<string, unknown>>("/api/leads", { method: "PATCH", body: JSON.stringify({ id, status }) });
-      const u = normalizeLead(raw);
-      setLeads((p) => p.map((l) => (l.id === id ? u : l)));
-      if (open?.id === id) setOpen(u);
-      flash(`Marked as ${STATUS_LABELS[status]}`);
-    } catch { flash("Failed to update"); }
-  }, [open, flash]);
+  const allVisibleSelected =
+    filteredLeads.length > 0 && filteredLeads.every((l) => selected.has(l.id));
 
-  const del = useCallback(async (id: string) => {
-    try {
-      await api("/api/leads", { method: "DELETE", body: JSON.stringify({ id }) });
-      setLeads((p) => p.filter((l) => l.id !== id));
-      setOpen(null);
-      flash("Lead deleted");
-    } catch { flash("Failed to delete"); }
-  }, [flash]);
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filteredLeads.map((l) => l.id)));
+    }
+  };
 
-  const toggleSelect = useCallback((id: string) => {
+  const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }, []);
+  };
 
-  const allSelected = filtered.length > 0 && filtered.every((l) => selected.has(l.id));
-
-  const toggleSelectAll = useCallback(() => {
-    if (allSelected) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filtered.map((l) => l.id)));
-    }
-  }, [allSelected, filtered]);
-
-  const bulkUpdateStatus = useCallback(async () => {
-    if (!bulkStatus || selected.size === 0) return;
-    const ids = Array.from(selected);
-    flash(`Updating ${ids.length} leads...`);
-    let ok = 0;
-    for (const id of ids) {
-      try {
-        const raw = await api<Record<string, unknown>>("/api/leads", { method: "PATCH", body: JSON.stringify({ id, status: bulkStatus }) });
-        const u = normalizeLead(raw);
-        setLeads((p) => p.map((l) => (l.id === id ? u : l)));
-        ok++;
-      } catch {}
-    }
-    setSelected(new Set());
-    setBulkStatus("");
-    flash(`Updated ${ok} lead${ok !== 1 ? "s" : ""} to ${STATUS_LABELS[bulkStatus]}`);
-  }, [bulkStatus, selected, flash]);
-
-  const bulkDelete = useCallback(async () => {
+  const handleBulkStatus = async () => {
     if (selected.size === 0) return;
-    const ids = Array.from(selected);
-    flash(`Deleting ${ids.length} leads...`);
-    let ok = 0;
-    for (const id of ids) {
-      try {
-        await api("/api/leads", { method: "DELETE", body: JSON.stringify({ id }) });
-        ok++;
-      } catch {}
+    try {
+      await Promise.all(
+        Array.from(selected).map((id) => updateLeadStatus(id, bulkStatus)),
+      );
+      setLeads((prev) =>
+        prev.map((l) =>
+          selected.has(l.id) ? { ...l, status: bulkStatus } : l,
+        ),
+      );
+      setSelected(new Set());
+      showToast(`Updated ${selected.size} leads`, "success");
+    } catch {
+      showToast("Failed to update leads", "error");
     }
-    setLeads((p) => p.filter((l) => !selected.has(l.id)));
-    setSelected(new Set());
-    flash(`Deleted ${ok} lead${ok !== 1 ? "s" : ""}`);
-  }, [selected, flash]);
+  };
 
-  const services = useMemo(() => [...new Set(leads.map((l) => l.service))].sort(), [leads]);
+  const handleBulkDelete = async () => {
+    if (selected.size === 0 || !confirm(`Delete ${selected.size} leads?`))
+      return;
+    try {
+      await Promise.all(Array.from(selected).map((id) => deleteLead(id)));
+      setLeads((prev) => prev.filter((l) => !selected.has(l.id)));
+      setSelected(new Set());
+      showToast(`Deleted ${selected.size} leads`, "success");
+    } catch {
+      showToast("Failed to delete leads", "error");
+    }
+  };
 
-  if (!auth) {
+  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
+    try {
+      await updateLeadStatus(leadId, newStatus);
+      setLeads((prev) =>
+        prev.map((l) =>
+          l.id === leadId ? { ...l, status: newStatus } : l,
+        ),
+      );
+      if (detailLead?.id === leadId) {
+        setDetailLead((prev) =>
+          prev ? { ...prev, status: newStatus } : prev,
+        );
+      }
+      showToast(`Status updated to ${STATUS_LABELS[newStatus]}`, "success");
+    } catch {
+      showToast("Failed to update status", "error");
+    }
+  };
+
+  const handleDelete = async (leadId: string) => {
+    if (!confirm("Delete this lead?")) return;
+    try {
+      await deleteLead(leadId);
+      setLeads((prev) => prev.filter((l) => l.id !== leadId));
+      setDetailLead(null);
+      showToast("Lead deleted", "success");
+    } catch {
+      showToast("Failed to delete lead", "error");
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      await loginEmail(email, password);
+    } catch (err: any) {
+      setLoginError(err.message || "Login failed");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      await loginGoogle();
+    } catch (err: any) {
+      setLoginError(err.message || "Google login failed");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
-        <div className="w-full max-w-sm px-6">
-          <div className="text-center mb-8">
-            <Image src="/FutureMEch Logo.png" alt="FutureMech" width={160} height={40} className="mx-auto h-10 w-auto" />
-            <p className="mt-3 text-[0.75rem] font-medium uppercase tracking-[0.2em] text-stone">Admin Panel</p>
-          </div>
-          <div className="rounded-2xl border border-parchment bg-white-pure p-6 shadow-sm">
-            <label className="mb-2 block text-[0.6875rem] font-semibold uppercase tracking-wider text-graphite">Username</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); setPwErr(""); }}
-              onKeyDown={(e) => e.key === "Enter" && login()}
-              placeholder="Enter username"
-              autoComplete="username"
-              disabled={locked}
-              className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-3 text-[0.875rem] text-ink placeholder:text-sand focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <label className="mb-2 mt-4 block text-[0.6875rem] font-semibold uppercase tracking-wider text-graphite">Password</label>
-            <input
-              type="password"
-              value={pw}
-              onChange={(e) => { setPw(e.target.value); setPwErr(""); }}
-              onKeyDown={(e) => e.key === "Enter" && login()}
-              placeholder="Enter password"
-              autoComplete="current-password"
-              disabled={locked}
-              className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-3 text-[0.875rem] text-ink placeholder:text-sand focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            {pwErr && <p className="mt-2 text-[0.75rem] text-red-600">{pwErr}</p>}
-            {locked && lockTimer > 0 && (
-              <p className="mt-1 text-[0.6875rem] text-stone">Try again in {lockTimer}s</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F0E8]">
+        <Loader2 className="h-8 w-8 animate-spin text-[#8B6914]" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F0E8] p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl border border-[#D4C4A8]/60 shadow-xl p-8">
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#8B6914]/10 mb-4">
+                <span className="text-2xl font-bold text-[#8B6914]">FM</span>
+              </div>
+              <h1 className="text-2xl font-bold text-[#2C1810]">Admin Panel</h1>
+              <p className="text-sm text-[#8B6914]/60 mt-1">
+                Sign in to manage leads
+              </p>
+            </div>
+
+            {loginError && (
+              <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                {loginError}
+              </div>
             )}
-            <button onClick={login} disabled={locked || !username.trim() || !pw.trim()} className="mt-4 w-full rounded-xl bg-ink py-3 text-[0.875rem] font-semibold text-white-pure transition-all duration-200 hover:bg-graphite active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
-              Sign In
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#2C1810] mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white px-4 py-2.5 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
+                  placeholder="admin@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#2C1810] mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white px-4 py-2.5 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
+                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="w-full rounded-lg bg-[#8B6914] py-2.5 text-sm font-semibold text-white hover:bg-[#A07A1A] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {loginLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#D4C4A8]/60" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-3 text-[#8B6914]/60">or</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGoogleLogin}
+              disabled={loginLoading}
+              className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#D4C4A8]/60 bg-white py-2.5 text-sm font-medium text-[#2C1810] hover:bg-[#F5F0E8] hover:border-[#8B6914]/30 disabled:opacity-50 transition-all"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24">
+                <path
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+                  fill="#4285F4"
+                />
+                <path
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                  fill="#34A853"
+                />
+                <path
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                  fill="#FBBC05"
+                />
+                <path
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                  fill="#EA4335"
+                />
+              </svg>
+              Continue with Google
             </button>
           </div>
-          <p className="mt-4 text-center text-[0.625rem] text-sand">Protected area. Unauthorized access is logged.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <>
-      <Header />
-      <main className="flex flex-col min-h-screen">
-        {/* Top bar */}
-        <div className="shrink-0 border-b border-parchment bg-white-pure">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-[5vw] h-14">
-            <div className="flex items-center gap-3">
-              <Image src="/FutureMEch Logo.png" alt="FutureMech" width={120} height={30} className="h-6 w-auto" />
-              <span className="text-[0.6875rem] font-medium text-stone">Lead Manager</span>
-            </div>
+    <div className="min-h-screen bg-[#F5F0E8]">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 animate-in fade-in slide-in-from-top-2">
+          <div
+            className={`flex items-center gap-2 rounded-lg border px-4 py-3 shadow-lg ${
+              toast.type === "success"
+                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                : "bg-red-50 border-red-200 text-red-700"
+            }`}
+          >
+            {toast.type === "success" ? (
+              <CheckCircle2 className="h-4 w-4" />
+            ) : (
+              <XCircle className="h-4 w-4" />
+            )}
+            <span className="text-sm font-medium">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
+      <header className="sticky top-0 z-30 border-b border-[#D4C4A8]/60 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <Link href="/" className="rounded-lg border border-parchment bg-white-pure px-3 py-1.5 text-[0.6875rem] font-medium text-graphite transition-all duration-200 hover:bg-graphite/5 hover:border-sand/40">&larr; Site</Link>
-              <button onClick={() => { setAuth(false); setPw(""); setLeads([]); }} className="rounded-lg border border-parchment px-3 py-1.5 text-[0.6875rem] font-medium text-stone transition-all duration-200 hover:bg-graphite/5 hover:border-sand/40">Sign Out</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="shrink-0 mx-auto max-w-7xl w-full px-[5vw] pt-5 pb-4">
-          <div className="grid grid-cols-5 gap-3">
-            {([
-              { l: "Total", n: leads.length, bg: "bg-parchment/40", ring: "border-sand/30", tc: "text-ink" },
-              { l: "New", n: stats.new, bg: "bg-amber-50", ring: "border-amber-200", tc: "text-amber-700" },
-              { l: "Viewed", n: stats.viewed, bg: "bg-blue-50", ring: "border-blue-200", tc: "text-blue-700" },
-              { l: "Contacted", n: stats.contacted, bg: "bg-emerald-50", ring: "border-emerald-200", tc: "text-emerald-700" },
-              { l: "Converted", n: stats.converted, bg: "bg-parchment/40", ring: "border-sand/30", tc: "text-ink" },
-            ] as const).map((s) => (
-              <div key={s.l} className={`rounded-xl border ${s.ring} ${s.bg} px-3 py-3 transition-all duration-200`}>
-                <p className={`text-[0.5625rem] font-bold uppercase tracking-widest ${s.tc} opacity-50`}>{s.l}</p>
-                <p className={`text-[1.375rem] font-serif font-bold leading-tight ${s.tc}`}>{s.n}</p>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#8B6914]">
+                <span className="text-xs font-bold text-white">FM</span>
               </div>
-            ))}
+              <span className="text-sm font-bold text-[#2C1810] hidden sm:inline">
+                Lead Manager
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#8B6914]/60 hidden sm:inline">
+              {user.email}
+            </span>
+            <a
+              href="/"
+              className="rounded-lg border border-[#D4C4A8]/60 px-3 py-1.5 text-xs font-medium text-[#2C1810] hover:bg-[#F5F0E8] transition-colors"
+            >
+              Site
+            </a>
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 rounded-lg border border-[#D4C4A8]/60 px-3 py-1.5 text-xs font-medium text-[#2C1810] hover:bg-[#F5F0E8] transition-colors"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {[
+            { label: "Total", value: stats.total, color: "text-[#8B6914]" },
+            { label: "New", value: stats.new, color: "text-blue-600" },
+            { label: "Viewed", value: stats.viewed, color: "text-amber-600" },
+            { label: "Contacted", value: stats.contacted, color: "text-purple-600" },
+            { label: "Converted", value: stats.converted, color: "text-emerald-600" },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-xl border border-[#D4C4A8]/60 bg-white p-4 shadow-sm"
+            >
+              <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider">
+                {stat.label}
+              </p>
+              <p className={`mt-1 text-2xl font-bold ${stat.color}`}>
+                {stat.value}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B6914]/40" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, email, phone, vehicle..."
+              className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white py-2 pl-10 pr-4 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B6914]/40 hover:text-[#8B6914]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Dropdown
+              value={statusFilter}
+              onChange={setStatusFilter}
+              placeholder="Status"
+              options={[
+                { value: "new", label: "New" },
+                { value: "viewed", label: "Viewed" },
+                { value: "contacted", label: "Contacted" },
+                { value: "converted", label: "Converted" },
+                { value: "lost", label: "Lost" },
+              ]}
+            />
+            <Dropdown
+              value={serviceFilter}
+              onChange={setServiceFilter}
+              placeholder="Service"
+              options={Object.entries(SERVICE_LABELS).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+            />
+            {(statusFilter || serviceFilter || search) && (
+              <button
+                onClick={() => {
+                  setStatusFilter("");
+                  setServiceFilter("");
+                  setSearch("");
+                }}
+                className="flex items-center gap-1 rounded-lg border border-[#D4C4A8]/60 bg-white px-3 py-2 text-xs font-medium text-[#2C1810] hover:bg-[#F5F0E8] transition-colors"
+              >
+                <X className="h-3 w-3" />
+                Clear
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Search + Filters */}
-        <div className="shrink-0 mx-auto max-w-7xl w-full px-[5vw] pb-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone/40" />
-              <input
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Search leads..."
-                className="w-full rounded-xl border border-parchment bg-white-pure py-2.5 pl-9 pr-4 text-[0.8125rem] text-ink placeholder:text-stone/40 focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10 transition-all"
-              />
-              {q && <button onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"><X size={13} /></button>}
-            </div>
-            <div className="flex gap-2">
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-2.5 shadow-sm">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleSelectAll}
+              className="h-4 w-4 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
+            />
+            <span className="text-xs text-[#8B6914]/60">
+              {selected.size > 0
+                ? `${selected.size} selected`
+                : `Select all (${filteredLeads.length})`}
+            </span>
+          </label>
+
+          {selected.size > 0 && (
+            <>
+              <div className="h-4 w-px bg-[#D4C4A8]/60" />
               <Dropdown
-                value={fStatus}
-                onChange={setFStatus}
-                placeholder="All Status"
+                value={bulkStatus}
+                onChange={(v) => setBulkStatus(v as LeadStatus)}
+                placeholder="Set status"
                 options={[
                   { value: "new", label: "New" },
                   { value: "viewed", label: "Viewed" },
@@ -345,303 +667,230 @@ export default function AdminPage() {
                   { value: "lost", label: "Lost" },
                 ]}
               />
-              <Dropdown
-                value={fService}
-                onChange={setFService}
-                placeholder="All Services"
-                options={services.map((s) => ({ value: s, label: SERVICE_LABELS[s] || s }))}
-              />
-              {(fStatus || fService || q) && (
-                <button onClick={() => { setQ(""); setFStatus(""); setFService(""); setSelected(new Set()); }} className="rounded-xl border border-parchment px-3 py-2.5 text-[0.75rem] font-medium text-stone hover:text-ink transition-all">Clear</button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Leads list */}
-        <div className="flex-1 min-h-0 mx-auto max-w-7xl w-full px-[5vw] pb-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-40"><RefreshCw size={20} className="animate-spin text-bronze" /></div>
-          ) : filtered.length === 0 ? (
-            <div className="rounded-xl border border-parchment bg-white-pure p-10 text-center"><p className="text-[0.8125rem] text-stone/60">No leads found</p></div>
-          ) : (
-            <>
-              {/* Select All + Bulk Actions */}
-              <div className="flex items-center gap-3 mb-2 rounded-xl border border-parchment bg-white-pure px-4 py-2.5">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleSelectAll}
-                    className="h-4 w-4 rounded border-parchment text-bronze accent-bronze focus:ring-bronze/20 cursor-pointer"
-                  />
-                  <span className="text-[0.75rem] font-medium text-graphite">
-                    {selected.size === 0
-                      ? `Select all (${filtered.length})`
-                      : `${selected.size} selected`}
-                  </span>
-                </label>
-                {selected.size > 0 && (
-                  <div className="flex items-center gap-2 ml-auto">
-                    <Dropdown
-                      value={bulkStatus}
-                      onChange={(v) => setBulkStatus(v as LeadStatus | "")}
-                      placeholder="Change status..."
-                      options={[
-                        { value: "new", label: "New" },
-                        { value: "viewed", label: "Viewed" },
-                        { value: "contacted", label: "Contacted" },
-                        { value: "converted", label: "Converted" },
-                        { value: "lost", label: "Lost" },
-                      ]}
-                    />
-                    <button
-                      onClick={bulkUpdateStatus}
-                      disabled={!bulkStatus}
-                      className="rounded-lg bg-bronze/10 border border-bronze/20 px-3 py-1.5 text-[0.75rem] font-semibold text-bronze transition-all duration-200 hover:bg-bronze/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      Apply
-                    </button>
-                    <button
-                      onClick={bulkDelete}
-                      className="rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-[0.75rem] font-semibold text-red-600 transition-all duration-200 hover:bg-red-100"
-                    >
-                      Delete ({selected.size})
-                    </button>
-                    <button
-                      onClick={() => setSelected(new Set())}
-                      className="rounded-lg border border-parchment px-2.5 py-1.5 text-[0.75rem] font-medium text-stone hover:text-ink transition-all"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2 overflow-y-auto pr-1 max-h-[60vh]">
-                {filtered.map((lead) => (
-                  <div
-                    key={lead.id}
-                    onClick={() => setOpen(lead)}
-                    className={`w-full text-left rounded-xl border bg-white-pure p-4 transition-all duration-200 hover:shadow-md active:scale-[0.995] group cursor-pointer ${
-                      selected.has(lead.id)
-                        ? "border-bronze/50 bg-bronze/5"
-                        : "border-parchment hover:border-bronze/30"
-                    }`}
-                  >
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(lead.id)}
-                          onClick={(e) => e.stopPropagation()}
-                          onChange={() => toggleSelect(lead.id)}
-                          className="mt-1 h-4 w-4 shrink-0 rounded border-parchment text-bronze accent-bronze focus:ring-bronze/20 cursor-pointer"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                            <span className="text-[0.875rem] font-semibold text-ink group-hover:text-bronze transition-colors duration-200">{lead.name}</span>
-                            <span className={`inline-flex items-center rounded-full px-2 py-px text-[0.5625rem] font-bold uppercase tracking-wider ${STATUS_COLORS[lead.status]}`}>
-                              {STATUS_LABELS[lead.status]}
-                            </span>
-                            <span className="inline-flex items-center rounded-full bg-parchment/60 px-2 py-px text-[0.5625rem] font-semibold text-graphite/70">
-                              {SERVICE_LABELS[lead.service] || lead.service}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[0.6875rem] text-stone/60">
-                            <span className="flex items-center gap-1"><Phone size={10} className="text-bronze/60" /> {lead.phone}</span>
-                            <span className="flex items-center gap-1"><Mail size={10} className="text-bronze/60" /> {lead.email}</span>
-                            {lead.vehicle && <span className="flex items-center gap-1"><Car size={10} className="text-bronze/60" /> {lead.vehicle}</span>}
-                            <span className="flex items-center gap-1"><Clock size={10} className="text-stone/40" /> {fmtDate(lead.createdAt)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <span className="inline-flex items-center gap-1 rounded-lg bg-ink px-3 py-1.5 text-[0.6875rem] font-semibold text-white-pure">
-                          <Eye size={11} /> View
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <button
+                onClick={handleBulkStatus}
+                className="flex items-center gap-1.5 rounded-lg bg-[#8B6914] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#A07A1A] transition-colors"
+              >
+                <Check className="h-3 w-3" />
+                Apply
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
+              >
+                <Trash2 className="h-3 w-3" />
+                Delete
+              </button>
             </>
           )}
         </div>
 
-        {filtered.length > 0 && (
-          <div className="shrink-0 py-2 text-center text-[0.625rem] text-stone/40 border-t border-parchment/50 bg-white-pure">
-            Showing {filtered.length} of {leads.length}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-6 w-6 animate-spin text-[#8B6914]" />
+          </div>
+        ) : error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+            <XCircle className="mx-auto h-8 w-8 text-red-400" />
+            <p className="mt-2 text-sm text-red-700">{error}</p>
+            <button
+              onClick={loadLeads}
+              className="mt-3 text-sm font-medium text-red-700 underline underline-offset-2 hover:text-red-900"
+            >
+              Retry
+            </button>
+          </div>
+        ) : filteredLeads.length === 0 ? (
+          <div className="rounded-xl border border-[#D4C4A8]/60 bg-white p-12 text-center shadow-sm">
+            <Users className="mx-auto h-10 w-10 text-[#8B6914]/30" />
+            <p className="mt-3 text-sm text-[#8B6914]/60">No leads found</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredLeads.map((lead) => (
+              <div
+                key={lead.id}
+                className="group relative flex items-center gap-4 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-3 shadow-sm hover:border-[#8B6914]/30 hover:shadow-md transition-all"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(lead.id)}
+                  onChange={() => toggleSelect(lead.id)}
+                  className="h-4 w-4 shrink-0 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
+                />
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-semibold text-[#2C1810] truncate">
+                      {lead.name}
+                    </h3>
+                    <span
+                      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[lead.status]}`}
+                    >
+                      {STATUS_LABELS[lead.status]}
+                    </span>
+                    <span className="inline-flex items-center rounded-full border border-[#D4C4A8]/60 bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-medium text-[#8B6914]">
+                      {SERVICE_LABELS[lead.service] || lead.service}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-4 text-xs text-[#8B6914]/60 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      {lead.phone}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      {lead.email}
+                    </span>
+                    {lead.vehicle && (
+                      <span className="flex items-center gap-1">
+                        <Car className="h-3 w-3" />
+                        {lead.vehicle}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {fmtDate(lead.createdAt)}
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setDetailLead(lead)}
+                  className="shrink-0 flex items-center gap-1.5 rounded-lg border border-[#D4C4A8]/60 px-3 py-1.5 text-xs font-medium text-[#2C1810] hover:bg-[#8B6914]/5 hover:border-[#8B6914]/30 opacity-0 group-hover:opacity-100 transition-all"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </main>
-      <Footer />
 
-      {/* Detail modal */}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 backdrop-blur-sm p-4 animate-in fade-in duration-200" onClick={() => setOpen(null)}>
-          <div className="w-full max-w-lg max-h-[90dvh] overflow-y-auto rounded-2xl bg-white-pure shadow-2xl animate-in zoom-in-95 fade-in duration-200" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white-pure border-b border-parchment px-6 py-4 flex items-start justify-between z-10">
+      {detailLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-[#2C1810]/40 backdrop-blur-sm"
+            onClick={() => setDetailLead(null)}
+          />
+          <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-[#D4C4A8]/60 bg-white shadow-2xl">
+            <div className="sticky top-0 flex items-center justify-between border-b border-[#D4C4A8]/60 bg-white/90 backdrop-blur-md px-6 py-4 rounded-t-2xl">
               <div>
-                <h2 className="text-lg font-semibold text-ink">{open.name}</h2>
-                <p className="text-[0.6875rem] text-stone mt-0.5">{fmtDate(open.createdAt)}</p>
+                <h2 className="text-lg font-bold text-[#2C1810]">
+                  {detailLead.name}
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[detailLead.status]}`}
+                  >
+                    {STATUS_LABELS[detailLead.status]}
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-[#D4C4A8]/60 bg-[#F5F0E8] px-2 py-0.5 text-[10px] font-medium text-[#8B6914]">
+                    {SERVICE_LABELS[detailLead.service] || detailLead.service}
+                  </span>
+                </div>
               </div>
-              <button onClick={() => setOpen(null)} className="rounded-lg p-1.5 transition-all duration-200 hover:bg-parchment">
-                <X size={16} className="text-stone" />
+              <button
+                onClick={() => setDetailLead(null)}
+                className="rounded-lg p-1.5 text-[#8B6914]/40 hover:bg-[#F5F0E8] hover:text-[#8B6914] transition-colors"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="px-6 py-5 space-y-4">
-              <div className="flex flex-wrap gap-2">
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.625rem] font-bold uppercase tracking-wider ${STATUS_COLORS[open.status]}`}>
-                  {STATUS_LABELS[open.status]}
-                </span>
-                <span className="inline-flex items-center rounded-full bg-parchment/60 px-2.5 py-1 text-[0.625rem] font-semibold text-graphite">
-                  {SERVICE_LABELS[open.service] || open.service || "N/A"}
-                </span>
+            <div className="px-6 py-5 space-y-5">
+              <div className="space-y-3">
+                <InfoRow
+                  icon={Phone}
+                  label="Phone"
+                  value={detailLead.phone}
+                  href={`tel:${detailLead.phone}`}
+                />
+                <InfoRow
+                  icon={Mail}
+                  label="Email"
+                  value={detailLead.email}
+                  href={`mailto:${detailLead.email}`}
+                />
+                <InfoRow icon={Car} label="Vehicle" value={detailLead.vehicle} />
+                <InfoRow
+                  icon={Clock}
+                  label="Created"
+                  value={fmtDate(detailLead.createdAt)}
+                />
+                <InfoRow
+                  icon={Clock}
+                  label="Updated"
+                  value={fmtDate(detailLead.updatedAt)}
+                />
               </div>
 
-              <div className="rounded-xl bg-ivory p-4 space-y-3">
-                <InfoRow icon={<Phone size={14} />} value={open.phone} href={`tel:${open.phone}`} />
-                <InfoRow icon={<Mail size={14} />} value={open.email} href={`mailto:${open.email}`} />
-                {open.vehicle && <InfoRow icon={<Car size={14} />} value={open.vehicle} />}
-                {open.message && (
-                  <div className="flex items-start gap-3">
-                    <MessageSquare size={14} className="text-bronze shrink-0 mt-0.5" />
-                    <span className="text-[0.8125rem] text-graphite leading-relaxed">{open.message}</span>
+              {detailLead.message && (
+                <div>
+                  <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider mb-1">
+                    Message
+                  </p>
+                  <div className="rounded-lg border border-[#D4C4A8]/60 bg-[#F5F0E8]/50 p-3 text-sm text-[#2C1810]">
+                    {detailLead.message}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
               <div>
-                <p className="text-[0.625rem] font-bold uppercase tracking-widest text-stone/40 mb-2">Actions</p>
+                <p className="text-xs font-medium text-[#8B6914]/60 uppercase tracking-wider mb-2">
+                  Actions
+                </p>
                 <div className="flex flex-wrap gap-2">
-                  {open.status === "new" && (
-                    <>
-                      <ActionBtn icon={<Eye size={12} />} label="Mark Viewed" onClick={() => setStatus(open.id, "viewed")} />
-                      <ActionBtn icon={<PhoneCall size={12} />} label="Mark Contacted" onClick={() => setStatus(open.id, "contacted")} />
-                      <ActionBtn icon={<XCircle size={12} />} label="Mark Lost" variant="danger" onClick={() => setStatus(open.id, "lost")} />
-                    </>
+                  {detailLead.status !== "viewed" && (
+                    <ActionBtn
+                      icon={Eye}
+                      label="Mark Viewed"
+                      color="blue"
+                      onClick={() => handleStatusChange(detailLead.id, "viewed")}
+                    />
                   )}
-                  {open.status === "viewed" && (
-                    <>
-                      <ActionBtn icon={<PhoneCall size={12} />} label="Mark Contacted" onClick={() => setStatus(open.id, "contacted")} />
-                      <ActionBtn icon={<XCircle size={12} />} label="Mark Lost" variant="danger" onClick={() => setStatus(open.id, "lost")} />
-                    </>
+                  {detailLead.status !== "contacted" && (
+                    <ActionBtn
+                      icon={Phone}
+                      label="Mark Contacted"
+                      color="purple"
+                      onClick={() =>
+                        handleStatusChange(detailLead.id, "contacted")
+                      }
+                    />
                   )}
-                  {open.status === "contacted" && (
-                    <>
-                      <ActionBtn icon={<CheckCircle size={12} />} label="Mark Converted" variant="success" onClick={() => setStatus(open.id, "converted")} />
-                      <ActionBtn icon={<XCircle size={12} />} label="Mark Lost" variant="danger" onClick={() => setStatus(open.id, "lost")} />
-                    </>
+                  {detailLead.status !== "converted" && (
+                    <ActionBtn
+                      icon={CheckCircle2}
+                      label="Mark Converted"
+                      color="green"
+                      onClick={() =>
+                        handleStatusChange(detailLead.id, "converted")
+                      }
+                    />
                   )}
-                  {open.status === "converted" && (
-                    <p className="text-[0.75rem] text-emerald-600 font-medium">This lead has been converted.</p>
-                  )}
-                  {open.status === "lost" && (
-                    <p className="text-[0.75rem] text-stone/50 font-medium">This lead was lost.</p>
+                  {detailLead.status !== "lost" && (
+                    <ActionBtn
+                      icon={XCircle}
+                      label="Mark Lost"
+                      color="red"
+                      onClick={() => handleStatusChange(detailLead.id, "lost")}
+                    />
                   )}
                 </div>
               </div>
-            </div>
 
-            <div className="sticky bottom-0 bg-white-pure border-t border-parchment px-6 py-3 flex justify-between items-center">
-              <button
-                onClick={() => del(open.id)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-[0.75rem] font-semibold text-red-600 transition-all duration-200 hover:bg-red-100 active:scale-[0.97]"
-              >
-                <Trash2 size={12} /> Delete
-              </button>
-              <button onClick={() => setOpen(null)} className="rounded-lg border border-parchment px-4 py-1.5 text-[0.75rem] font-medium text-graphite transition-all duration-200 hover:bg-graphite/5 active:scale-[0.97]">
-                Close
-              </button>
+              <div className="border-t border-[#D4C4A8]/60 pt-4">
+                <ActionBtn
+                  icon={Trash2}
+                  label="Delete Lead"
+                  color="red"
+                  onClick={() => handleDelete(detailLead.id)}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-xl bg-ink px-5 py-2.5 text-[0.8125rem] font-medium text-white-pure shadow-xl animate-in slide-in-from-bottom-2 fade-in duration-200">
-          {toast}
-        </div>
-      )}
-    </>
-  );
-}
-
-function InfoRow({ icon, value, href }: { icon: React.ReactNode; value: string; href?: string }) {
-  const inner = <span className="text-[0.8125rem] text-graphite">{value}</span>;
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-bronze shrink-0">{icon}</span>
-      {href ? <a href={href} className="hover:text-bronze transition-colors duration-200">{inner}</a> : inner}
-    </div>
-  );
-}
-
-function ActionBtn({ icon, label, onClick, variant = "default" }: {
-  icon: React.ReactNode; label: string; onClick: () => void; variant?: "default" | "success" | "danger";
-}) {
-  const s = {
-    default: "border-parchment bg-white-pure text-graphite hover:border-bronze/30 hover:bg-bronze/5",
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100",
-    danger: "border-red-200 bg-red-50 text-red-600 hover:bg-red-100",
-  };
-  return (
-    <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-[0.75rem] font-semibold transition-all duration-200 active:scale-[0.97] ${s[variant]}`}>
-      {icon} {label}
-    </button>
-  );
-}
-
-function Dropdown({ value, onChange, placeholder, options }: {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-  options: { value: string; label: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-
-  const selected = options.find((o) => o.value === value);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        onClick={() => setOpen((p) => !p)}
-        className={`flex items-center gap-2 rounded-xl border bg-white-pure px-3 py-2.5 text-[0.8125rem] transition-all duration-200 ${
-          open ? "border-bronze ring-2 ring-bronze/10" : "border-parchment hover:border-sand/40"
-        } ${value ? "text-ink" : "text-stone"}`}
-      >
-        <span className="truncate max-w-[120px]">{selected ? selected.label : placeholder}</span>
-        <svg className={`h-3.5 w-3.5 shrink-0 text-stone transition-transform duration-200 ${open ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 4.5L6 8.5L10 4.5" />
-        </svg>
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1.5 w-full min-w-[160px] rounded-xl border border-parchment bg-white-pure py-1.5 shadow-lg animate-in fade-in slide-in-from-top-1 duration-150">
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => { onChange(opt.value); setOpen(false); }}
-              className={`w-full px-3 py-2 text-left text-[0.8125rem] transition-colors duration-100 ${
-                opt.value === value
-                  ? "bg-bronze/10 text-bronze font-semibold"
-                  : "text-graphite hover:bg-parchment/50"
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
         </div>
       )}
     </div>

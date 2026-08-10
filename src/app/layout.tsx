@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, DM_Serif_Display } from "next/font/google";
 import { CookieConsent } from "@/components/ui/CookieConsent";
 import { SplashScreen } from "@/components/ui/SplashScreen";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -169,9 +170,11 @@ export default function RootLayout({
         <link rel="preload" as="image" href="/FutureMEch Logo.png" fetchPriority="high" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
-        <SplashScreen />
-        {children}
-        <CookieConsent />
+        <AuthProvider>
+          <SplashScreen />
+          {children}
+          <CookieConsent />
+        </AuthProvider>
       </body>
     </html>
   );

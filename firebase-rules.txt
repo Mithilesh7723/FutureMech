@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Leads collection - anyone can create (booking form), only authenticated users can read/update/delete
+    match /leads/{leadId} {
+      // Public: anyone can submit a lead (booking form)
+      allow create: if true;
+      
+      // Authenticated users only: read, update, delete
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}
