@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { fetchLeads, updateLeadStatus, deleteLead } from "@/lib/leads-store";
 import { fetchAuditLogs } from "@/lib/audit-log";
@@ -426,29 +427,39 @@ export default function AdminPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F0E8] p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl border border-[#D4C4A8]/60 shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[#8B6914]/10 mb-4">
-                <span className="text-2xl font-bold text-[#8B6914]">FM</span>
-              </div>
-              <h1 className="text-2xl font-bold text-[#2C1810]">Admin Panel</h1>
-              <p className="text-sm text-[#8B6914]/60 mt-1">
-                Sign in to manage leads
-              </p>
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F0E8] p-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%238B6914' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
+        <div className="w-full max-w-[400px] relative">
+          <div className="text-center mb-8">
+            <div className="inline-block mb-4">
+              <Image
+                src="/FutureMEch Logo.png"
+                alt="FutureMech"
+                width={180}
+                height={48}
+                className="h-12 w-auto mx-auto"
+                priority
+              />
             </div>
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="h-px w-8 bg-[#8B6914]/30" />
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#8B6914]">Admin Panel</p>
+              <div className="h-px w-8 bg-[#8B6914]/30" />
+            </div>
+            <p className="text-xs text-[#8B6914]/40">Sign in to manage your leads</p>
+          </div>
 
+          <div className="bg-white rounded-3xl border border-[#D4C4A8]/40 shadow-[0_8px_40px_rgba(139,105,20,0.08)] p-8">
             {loginError && (
-              <div className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              <div className="mb-5 flex items-center gap-2.5 rounded-xl bg-red-50 border border-red-100 px-4 py-3 text-sm text-red-600">
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                {loginError}
+                <span className="text-[0.8125rem]">{loginError}</span>
               </div>
             )}
 
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[#2C1810] mb-1">
+                <label className="mb-1.5 block text-[0.6875rem] font-semibold uppercase tracking-wider text-[#8B6914]/70">
                   Email
                 </label>
                 <input
@@ -456,12 +467,12 @@ export default function AdminPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white px-4 py-2.5 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
-                  placeholder="admin@example.com"
+                  className="w-full rounded-xl border border-[#D4C4A8]/50 bg-[#FAF8F4] px-4 py-3 text-[0.875rem] text-[#2C1810] placeholder-[#2C1810]/30 focus:border-[#8B6914] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B6914]/10 transition-all"
+                  placeholder="sukhrajsingh7773@gmail.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#2C1810] mb-1">
+                <label className="mb-1.5 block text-[0.6875rem] font-semibold uppercase tracking-wider text-[#8B6914]/70">
                   Password
                 </label>
                 <input
@@ -469,14 +480,14 @@ export default function AdminPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-[#D4C4A8]/60 bg-white px-4 py-2.5 text-sm text-[#2C1810] placeholder-[#2C1810]/40 focus:border-[#8B6914] focus:outline-none focus:ring-2 focus:ring-[#8B6914]/20 transition-all"
-                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                  className="w-full rounded-xl border border-[#D4C4A8]/50 bg-[#FAF8F4] px-4 py-3 text-[0.875rem] text-[#2C1810] placeholder-[#2C1810]/30 focus:border-[#8B6914] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B6914]/10 transition-all"
+                  placeholder="Enter your password"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full rounded-lg bg-[#8B6914] py-2.5 text-sm font-semibold text-white hover:bg-[#A07A1A] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                className="w-full rounded-xl bg-[#2C1810] py-3.5 text-[0.875rem] font-semibold text-white hover:bg-[#1A0F0A] disabled:opacity-50 transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98]"
               >
                 {loginLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -488,17 +499,17 @@ export default function AdminPage() {
 
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#D4C4A8]/60" />
+                <div className="w-full border-t border-[#D4C4A8]/40" />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-3 text-[#8B6914]/60">or</span>
+              <div className="relative flex justify-center text-[0.6875rem]">
+                <span className="bg-white px-4 text-[#8B6914]/40 font-medium uppercase tracking-wider">or</span>
               </div>
             </div>
 
             <button
               onClick={handleGoogleLogin}
               disabled={loginLoading}
-              className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#D4C4A8]/60 bg-white py-2.5 text-sm font-medium text-[#2C1810] hover:bg-[#F5F0E8] hover:border-[#8B6914]/30 disabled:opacity-50 transition-all"
+              className="w-full flex items-center justify-center gap-3 rounded-xl border border-[#D4C4A8]/50 bg-[#FAF8F4] py-3.5 text-[0.8125rem] font-medium text-[#2C1810] hover:bg-white hover:border-[#8B6914]/30 hover:shadow-sm disabled:opacity-50 transition-all duration-200 active:scale-[0.98]"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -521,6 +532,10 @@ export default function AdminPage() {
               Continue with Google
             </button>
           </div>
+
+          <p className="mt-5 text-center text-[0.625rem] text-[#8B6914]/30 font-medium">
+            Protected area. Unauthorized access is logged and monitored.
+          </p>
         </div>
       </div>
     );
