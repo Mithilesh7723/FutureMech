@@ -373,7 +373,8 @@ export default function AdminPage() {
     setLoginError("");
     setLoginLoading(true);
     try {
-      await loginEmail(email, password);
+      const err = await loginEmail(email, password);
+      if (err) setLoginError(err);
     } catch (err: any) {
       setLoginError(err.message || "Login failed");
     } finally {
