@@ -12,7 +12,15 @@ export type HeroScrubProps = {
   frameUrl: (index: number) => string;
 };
 
-const PRELOAD_CONCURRENCY = 12;
+const PRELOAD_CONCURRENCY = (() => {
+  if (typeof navigator === "undefined") return 8;
+  const conn = (navigator as any).connection;
+  if (!conn) return 8;
+  if (conn.saveData) return 4;
+  if (conn.effectiveType === "2g" || conn.effectiveType === "slow-2g") return 3;
+  if (conn.effectiveType === "3g") return 5;
+  return 8;
+})();
 
 function setCardStyle(card: HTMLDivElement | null, p: number) {
   if (!card) return;

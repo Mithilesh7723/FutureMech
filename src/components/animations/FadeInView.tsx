@@ -14,7 +14,7 @@ interface FadeInViewProps {
 export function FadeInView({
   children,
   delay = 0,
-  duration = 0.5,
+  duration = 0.7,
   direction = "up",
   className,
 }: FadeInViewProps) {

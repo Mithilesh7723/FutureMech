@@ -6,70 +6,41 @@ import { CountUp } from "@/components/animations/CountUp";
 import { StaggerChildren, StaggerItem } from "@/components/animations/StaggerChildren";
 import { motion, useReducedMotion } from "framer-motion";
 
-const BatteryIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="16" height="10" rx="2" />
-    <path d="M22 11v2" />
-    <path d="M6 11v2" />
-    <path d="M10 11v2" />
-    <path d="M14 11v2" />
-  </svg>
-);
-
-const SatisfactionIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
-);
-
-const WarrantyIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" />
-    <polyline points="12 6 12 12 16 14" />
-  </svg>
-);
-
-const InspectionIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
-);
-
 const metrics = [
-  { value: 2500, suffix: "+", label: "Batteries Inspected", icon: BatteryIcon },
-  { value: 97, suffix: "%", label: "Customer Satisfaction", icon: SatisfactionIcon },
-  { value: 12, suffix: "-Month", label: "Warranty Coverage", icon: WarrantyIcon },
-  { value: 14, suffix: "-Point", label: "Inspection Process", icon: InspectionIcon },
+  { number: "01", value: 2500, suffix: "+", label: "Batteries Inspected" },
+  { number: "02", value: 97, suffix: "%", label: "Customer Satisfaction" },
+  { number: "03", value: 12, suffix: "-Month", label: "Warranty Coverage" },
+  { number: "04", value: 14, suffix: "-Point", label: "Inspection Process" },
 ];
 
-function MetricCard({ metric, index }: { metric: typeof metrics[0]; index: number }) {
+function MetricCard({ metric }: { metric: typeof metrics[0] }) {
   const shouldReduceMotion = useReducedMotion();
-  const Icon = metric.icon;
 
   return (
     <StaggerItem>
       <motion.div
         whileHover={shouldReduceMotion ? {} : { y: -4 }}
-        className="card-solid group relative overflow-hidden p-6 text-center"
+        className="card-solid group relative overflow-hidden p-6 text-center sm:p-8"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-bronze-light/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-br from-bronze-light/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
         <div className="relative">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-bronze-light text-bronze transition-colors duration-300 group-hover:bg-bronze group-hover:text-white-pure">
-            <Icon />
+          {/* Number container */}
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-bronze-light font-serif text-[1.125rem] font-bold text-bronze/30 transition-all duration-500 group-hover:bg-bronze group-hover:text-white-pure">
+            {metric.number}
           </div>
 
-          <div className="mb-2">
+          {/* Big number */}
+          <div className="mb-3">
             <CountUp
               target={metric.value}
               suffix={metric.suffix}
-              className="block font-serif text-[2rem] leading-none text-ink sm:text-[2.5rem]"
+              className="block font-serif text-[2.25rem] leading-none text-ink sm:text-[2.75rem]"
             />
           </div>
 
-          <p className="text-[0.75rem] font-medium uppercase tracking-[0.1em] text-stone">
+          {/* Label */}
+          <p className="text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-stone sm:text-[0.75rem]">
             {metric.label}
           </p>
         </div>
@@ -79,8 +50,6 @@ function MetricCard({ metric, index }: { metric: typeof metrics[0]; index: numbe
 }
 
 export function TrustIndicators() {
-  const shouldReduceMotion = useReducedMotion();
-
   return (
     <section className="relative section-padding overflow-hidden">
       <div className="absolute inset-0 texture-concrete" />
@@ -100,33 +69,10 @@ export function TrustIndicators() {
           </div>
         </FadeInView>
 
-        <StaggerChildren staggerDelay={0.08} className="mb-16 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StaggerChildren staggerDelay={0.08} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {metrics.map((metric, i) => (
-            <MetricCard key={i} metric={metric} index={i} />
+            <MetricCard key={i} metric={metric} />
           ))}
-        </StaggerChildren>
-
-        <StaggerChildren staggerDelay={0.06}>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-            {[
-              { number: "01", title: "Transparent Process", description: "Every step of our process is documented and explained. You know exactly what's happening with your vehicle." },
-              { number: "02", title: "Honest Recommendations", description: "If your battery doesn't need service, we'll tell you. Our goal is your trust, not a quick sale." },
-              { number: "03", title: "Digital Documentation", description: "Complete digital records with photos, data, and technician notes. Your service history, always accessible." },
-            ].map((item, i) => (
-              <StaggerItem key={i}>
-                <motion.div
-                  whileHover={shouldReduceMotion ? {} : { y: -2 }}
-                  className="card-bordered group h-full p-6"
-                >
-                  <div className="mb-4 font-serif text-[2rem] font-bold text-bronze/20 transition-colors duration-300 group-hover:text-bronze/40">
-                    {item.number}
-                  </div>
-                  <h3 className="mb-2 text-[1rem] font-semibold text-ink">{item.title}</h3>
-                  <p className="text-[0.875rem] leading-[1.65] text-stone">{item.description}</p>
-                </motion.div>
-              </StaggerItem>
-            ))}
-          </div>
         </StaggerChildren>
       </Container>
     </section>

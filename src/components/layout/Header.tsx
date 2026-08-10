@@ -46,13 +46,13 @@ export function Header() {
       setPastHero(y > window.innerHeight * 1.5);
 
       if (pathname === "/") {
-        const sections = ["how-it-works", "contact", "book"];
+        const sections = ["how-it-works", "contact"];
         let found = "";
         for (const id of sections) {
           const el = document.getElementById(id);
           if (el) {
             const rect = el.getBoundingClientRect();
-            if (rect.top <= HEADER_HEIGHT + 100) {
+            if (rect.top <= HEADER_HEIGHT + 200) {
               found = id;
             }
           }
@@ -291,11 +291,13 @@ export function Header() {
                           {!isActive && (
                             <span className="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-white/10" />
                           )}
-                          {isActive && (
+                           {isActive && (
                             <motion.span
                               layoutId="active-mobile-menu-item"
-                              className="absolute inset-0 rounded-xl bg-white/15 backdrop-blur-md border border-white/20"
-                              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                              className="absolute inset-0 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 shadow-[0_0_20px_rgba(148,163,184,0.12)]"
+                              transition={{
+                                layout: { type: "spring", stiffness: 200, damping: 28, mass: 0.8 },
+                              }}
                             />
                           )}
                           <span className="relative z-10">{link.label}</span>

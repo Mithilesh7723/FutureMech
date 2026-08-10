@@ -9,6 +9,7 @@ const dmSans = DM_Sans({
   display: "swap",
   variable: "--font-dm-sans",
   weight: ["400", "500", "600", "700"],
+  preload: true,
 });
 
 const dmSerif = DM_Serif_Display({
@@ -17,6 +18,7 @@ const dmSerif = DM_Serif_Display({
   variable: "--font-dm-serif",
   weight: "400",
   style: ["normal", "italic"],
+  preload: true,
 });
 
 const SITE_URL = "https://futuremech.horizonflare.in";
@@ -26,6 +28,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  minimumScale: 1,
+  userScalable: true,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
@@ -158,7 +163,10 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/FutureMEch Logo.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preload" as="image" href="/hero-frames-new/frame-0001.webp" type="image/webp" fetchPriority="high" />
+        <link rel="preload" as="image" href="/FutureMEch Logo.png" fetchPriority="high" />
       </head>
       <body className="min-h-full flex flex-col antialiased">
         <SplashScreen />

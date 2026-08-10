@@ -34,8 +34,8 @@ export function ContactSection() {
         <FadeInView delay={0.1}>
           <div className="mx-auto grid max-w-[800px] grid-cols-1 gap-4 sm:grid-cols-2">
             {contactItems.map((item, i) => (
-              <div key={i} className="card-solid p-5">
-                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-bronze-light text-bronze">
+              <div key={i} className="card-solid group p-5 transition-all duration-500 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-bronze-light text-bronze transition-colors duration-500 group-hover:bg-bronze group-hover:text-white-pure">
                   <item.icon size={16} />
                 </div>
                 <h3 className="mb-0.5 text-[0.9375rem] font-semibold text-ink">{item.title}</h3>

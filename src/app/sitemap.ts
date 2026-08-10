@@ -1,41 +1,76 @@
 import type { MetadataRoute } from "next";
-import { SERVICES_DATA } from "@/lib/services-data";
+
+const SITE_URL = "https://futuremech.horizonflare.in";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://futuremech.horizonflare.in";
-
-  const servicePages = Object.keys(SERVICES_DATA).map((slug) => ({
-    url: `${baseUrl}/services/${slug}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
-  }));
+  const now = new Date();
 
   return [
     {
-      url: baseUrl,
-      lastModified: new Date(),
+      url: SITE_URL,
+      lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${baseUrl}/services`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
+      url: `${SITE_URL}/services`,
+      lastModified: now,
+      changeFrequency: "weekly",
       priority: 0.9,
     },
-    ...servicePages,
     {
-      url: `${baseUrl}/about`,
-      lastModified: new Date(),
+      url: `${SITE_URL}/about`,
+      lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
     },
     {
-      url: `${baseUrl}/terms`,
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 0.3,
+      url: `${SITE_URL}/services/battery-regeneration`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/services/battery-diagnostics`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/services/car-service`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/services/doorstep-service`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/services/fleet-maintenance`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/services/amc-plans`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${SITE_URL}/services/pre-delivery-inspection`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+    {
+      url: `${SITE_URL}/services/digital-vehicle-reports`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
   ];
 }

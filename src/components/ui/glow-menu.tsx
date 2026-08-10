@@ -42,12 +42,12 @@ export function MenuBar({ items, activeItem, onItemClick, className, dark, frost
               key={item.label}
               onClick={() => onItemClick(item.label)}
               className={cn(
-                "group relative flex items-center gap-2 rounded-full px-3.5 py-2 text-[0.8125rem] font-medium transition-all duration-300",
+                "group relative flex items-center gap-2 rounded-full px-3.5 py-2 text-[0.8125rem] font-medium transition-all duration-500 ease-out",
                 isActive
                   ? frosted
                     ? dark
                       ? "text-white"
-                      : "text-bronze"
+                      : "text-slate-700"
                     : "text-graphite"
                   : frosted
                     ? dark
@@ -75,10 +75,12 @@ export function MenuBar({ items, activeItem, onItemClick, className, dark, frost
                     frosted
                       ? dark
                         ? "bg-white/15 border border-white/20"
-                        : "bg-bronze/10 border border-bronze/15"
+                        : "bg-slate-500/8 border border-slate-400/15 shadow-[0_0_12px_rgba(100,116,139,0.08)]"
                       : "bg-graphite/8 border border-graphite/10"
                   )}
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  transition={{
+                    layout: { type: "spring", stiffness: 200, damping: 28, mass: 0.8 },
+                  }}
                 />
               )}
               <item.icon size={15} className="relative z-10" />

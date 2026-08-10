@@ -21,13 +21,13 @@ const iconMap: Record<string, React.ComponentType<{ size?: number }>> = {
 };
 
 const serviceImages: Record<string, string> = {
-  "battery-regeneration": "https://images.unsplash.com/photo-1617886322168-72b886573c35?w=600&h=500&fit=crop&q=80",
+  "battery-regeneration": "https://images.unsplash.com/photo-1767990495521-95cceb571125?w=600&h=500&fit=crop&q=80",
   "battery-diagnostics": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=600&h=500&fit=crop&q=80",
-  "car-service": "https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=600&h=500&fit=crop&q=80",
-  "doorstep-service": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=600&h=500&fit=crop&q=80",
-  "fleet-maintenance": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&h=500&fit=crop&q=80",
-  "amc-plans": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&h=500&fit=crop&q=80",
-  "pre-delivery-inspection": "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=600&h=500&fit=crop&q=80",
+  "car-service": "https://images.unsplash.com/photo-1643700973089-baa86a1ab9ee?w=600&h=500&fit=crop&q=80",
+  "doorstep-service": "https://images.unsplash.com/photo-1632733711679-529326f6db12?w=600&h=500&fit=crop&q=80",
+  "fleet-maintenance": "https://images.unsplash.com/photo-1531683760080-7bb28a630bd7?w=600&h=500&fit=crop&q=80",
+  "amc-plans": "https://images.unsplash.com/photo-1670882105763-5fb465786232?w=600&h=500&fit=crop&q=80",
+  "pre-delivery-inspection": "https://images.unsplash.com/photo-1596986952526-3be237187071?w=600&h=500&fit=crop&q=80",
   "digital-vehicle-reports": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=500&fit=crop&q=80",
 };
 
@@ -70,10 +70,10 @@ export default function ServicesPage() {
                               src={imgSrc}
                               alt={service.title}
                               fill
-                              className="object-cover transition-transform duration-700 group-hover:scale-110"
+                              className="object-cover img-zoom"
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-ink/40 via-ink/10 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-ink/40 via-ink/10 to-transparent transition-all duration-[4s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:from-ink/60 group-hover:via-ink/20" />
                             <div className="absolute bottom-4 left-4">
                               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white-pure shadow-[0_4px_12px_rgba(0,0,0,0.15)] text-bronze">
                                 {Icon && <Icon size={18} />}

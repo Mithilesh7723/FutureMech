@@ -5,17 +5,14 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { FadeInView } from "@/components/animations/FadeInView";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
-import {
-  Search, Zap, BarChart3, Shield, FileCheck, Headphones,
-} from "lucide-react";
 
 const processSteps = [
-  { icon: Search, title: "Battery Health Inspection", description: "Visual and electrical assessment of battery condition." },
-  { icon: BarChart3, title: "Digital Diagnostics", description: "14-parameter diagnostic scan with real-time data." },
-  { icon: Zap, title: "Smart Charging", description: "Controlled multi-phase charging to dissolve sulfate crystals." },
-  { icon: Shield, title: "Cell Balancing", description: "Individual cell balancing for uniform performance." },
-  { icon: FileCheck, title: "Before & After Reports", description: "Complete digital documentation of results." },
-  { icon: Headphones, title: "Warranty & Support", description: "Warranty based on post-regeneration condition." },
+  { title: "Battery Health Inspection", description: "Visual and electrical assessment of battery condition." },
+  { title: "Digital Diagnostics", description: "14-parameter diagnostic scan with real-time data." },
+  { title: "Smart Charging", description: "Controlled multi-phase charging to dissolve sulfate crystals." },
+  { title: "Cell Balancing", description: "Individual cell balancing for uniform performance." },
+  { title: "Before & After Reports", description: "Complete digital documentation of results." },
+  { title: "Warranty & Support", description: "Warranty based on post-regeneration condition." },
 ];
 
 function ProcessStepItem({ step, index }: { step: typeof processSteps[0]; index: number }) {
@@ -34,30 +31,25 @@ function ProcessStepItem({ step, index }: { step: typeof processSteps[0]; index:
       style={shouldReduceMotion ? {} : { opacity, y }}
       className="group relative"
     >
-      <div className="flex items-start gap-5">
-        {/* Animated icon */}
+      <div className="flex items-center gap-5 py-5">
+        {/* Number container */}
         <motion.div
-          whileHover={shouldReduceMotion ? {} : { scale: 1.1, rotate: 5 }}
-          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-bronze-light text-bronze transition-colors duration-300 group-hover:bg-bronze group-hover:text-white-pure"
+          whileHover={shouldReduceMotion ? {} : { scale: 1.1 }}
+          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-bronze-light font-serif text-[1.125rem] font-bold text-bronze/30 transition-all duration-500 group-hover:bg-bronze group-hover:text-white-pure"
         >
-          <step.icon size={20} />
+          {String(index + 1).padStart(2, "0")}
         </motion.div>
 
         {/* Content */}
         <div className="flex-1">
-          <div className="mb-1 flex items-center gap-3">
-            <span className="font-serif text-[0.75rem] font-bold text-bronze/40">
-              {String(index + 1).padStart(2, "0")}
-            </span>
-            <h3 className="text-[1rem] font-semibold text-ink">{step.title}</h3>
-          </div>
+          <h3 className="mb-1 text-[1rem] font-semibold text-ink">{step.title}</h3>
           <p className="text-[0.875rem] leading-[1.65] text-stone">{step.description}</p>
         </div>
       </div>
 
-      {/* Connecting line */}
+      {/* Separator line */}
       {index < processSteps.length - 1 && (
-        <div className="ml-6 mt-4 h-[1px] bg-gradient-to-r from-parchment via-parchment to-transparent" />
+        <div className="ml-[68px] h-[1px] bg-parchment" />
       )}
     </motion.div>
   );

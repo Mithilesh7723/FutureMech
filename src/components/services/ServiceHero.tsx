@@ -6,17 +6,7 @@ import { FadeInView } from "@/components/animations/FadeInView";
 import { motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import { useRef } from "react";
-
-const serviceImages: Record<string, string> = {
-  "battery-regeneration": "https://images.unsplash.com/photo-1617886322168-72b886573c35?w=1920&h=900&fit=crop&q=80",
-  "battery-diagnostics": "https://images.unsplash.com/photo-1619642751034-765dfdf7c58e?w=1920&h=900&fit=crop&q=80",
-  "car-service": "https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=1920&h=900&fit=crop&q=80",
-  "doorstep-service": "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=1920&h=900&fit=crop&q=80",
-  "fleet-maintenance": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1920&h=900&fit=crop&q=80",
-  "amc-plans": "https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1920&h=900&fit=crop&q=80",
-  "pre-delivery-inspection": "https://images.unsplash.com/photo-1487754180451-c456f719a1fc?w=1920&h=900&fit=crop&q=80",
-  "digital-vehicle-reports": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1920&h=900&fit=crop&q=80",
-};
+import { SERVICE_IMAGES } from "@/lib/images";
 
 interface ServiceHeroProps {
   slug: string;
@@ -36,7 +26,7 @@ export function ServiceHero({ slug, title, tagline, description, cta, ctaSeconda
     offset: ["start start", "end start"],
   });
   const photoY = useTransform(scrollYProgress, [0, 1], [0, 60]);
-  const imgSrc = serviceImages[slug];
+  const imgData = SERVICE_IMAGES[slug as keyof typeof SERVICE_IMAGES];
 
   return (
     <section ref={heroRef} className="relative min-h-[70vh] overflow-hidden bg-section-ivory">
@@ -45,10 +35,10 @@ export function ServiceHero({ slug, title, tagline, description, cta, ctaSeconda
         className="absolute inset-0"
         style={shouldReduceMotion ? {} : { y: photoY }}
       >
-        {imgSrc && (
+        {imgData && (
           <Image
-            src={imgSrc}
-            alt={title}
+            src={imgData.hero}
+            alt={imgData.alt}
             fill
             className="object-cover"
             priority
@@ -57,9 +47,12 @@ export function ServiceHero({ slug, title, tagline, description, cta, ctaSeconda
         )}
       </motion.div>
 
+      {/* Dark overlay for contrast */}
+      <div className="absolute inset-0 bg-ink/40" />
+
       {/* Warm editorial overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-ivory/85 via-ivory/50 to-ivory/15" />
-      <div className="absolute inset-0 bg-gradient-to-t from-ivory via-transparent to-ivory/20" />
+      <div className="absolute inset-0 bg-gradient-to-r from-ivory/90 via-ivory/60 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-ivory/80 via-transparent to-ivory/30" />
 
       <Container className="relative flex min-h-[60vh] sm:min-h-[70vh] items-center">
         <div className="w-full pt-28 pb-12 sm:pt-32 sm:pb-16 lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center">

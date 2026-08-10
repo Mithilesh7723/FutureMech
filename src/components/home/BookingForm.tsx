@@ -137,7 +137,7 @@ export function BookingForm() {
                     <input
                       type="tel" id="phone" name="phone" required
                       value={formData.phone} onChange={handleChange}
-                      placeholder="+91 63785 28881"
+                      placeholder="+91 98765 43210"
                       className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-2.5 text-[0.875rem] text-ink placeholder:text-sand focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10"
                     />
                   </div>

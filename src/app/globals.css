@@ -87,28 +87,40 @@ body {
 
 /* Card system */
 .card-solid {
-  background: #FFFFFF;
-  border: 1px solid #E5E2DA;
+  background: #FAF9F7;
+  border: 1px solid #E8E6E1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 1.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-solid:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
 }
 
 .card-bordered {
   background: transparent;
-  border: 1px solid #E5E2DA;
+  border: 1px solid #E8E6E1;
   border-radius: 16px;
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 1.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .card-bordered:hover {
   border-color: #8B7355;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Premium image zoom — ultra-slow, buttery smooth */
+.img-zoom {
+  transition: transform 3.5s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.group:hover > .img-zoom,
+.group:hover .img-zoom {
+  transform: scale(1.08);
 }
 
 /* Glass — used sparingly on dark surfaces only */
@@ -120,16 +132,24 @@ body {
 }
 
 .glass-light {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(229, 226, 218, 0.6);
+  background: rgba(250, 249, 247, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(232, 230, 225, 0.6);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 }
 
 /* Premium textures */
 .texture-paper {
   background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
 .texture-concrete {
@@ -162,7 +182,9 @@ body {
 }
 
 .bg-section-white {
-  background-color: #FFFFFF;
+  background-color: #F7F6F3;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-blend-mode: overlay;
 }
 
 /* Subtle gradient overlays */
@@ -223,12 +245,26 @@ body {
   outline: 2px solid #8B7355;
   outline-offset: 2px;
   border-radius: 4px;
+  transition: outline-offset 0.15s ease;
 }
 
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid #8B7355;
   outline-offset: 2px;
+}
+
+/* Smooth transitions for interactive elements */
+a {
+  transition: color 0.4s ease, opacity 0.4s ease;
+}
+
+button {
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+img {
+  transition: none;
 }
 
 /* Hide scrollbar for horizontal scroll sections */
@@ -292,4 +328,38 @@ a:focus-visible {
 /* Splash screen CSS fallback — hides even if JS hydration fails */
 @keyframes splash-auto-hide {
   to { opacity: 0; pointer-events: none; visibility: hidden; }
+}
+
+/* Performance: content-visibility for below-fold sections */
+@media (prefers-reduced-motion: no-preference) {
+  section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 800px;
+  }
+}
+
+/* Mobile touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .group:hover .img-zoom {
+    transform: none;
+  }
+  .card-solid:hover,
+  .card-bordered:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .perspective-card:hover {
+    transform: none;
+  }
+}
+
+/* Prevent layout shifts from images */
+.img-zoom {
+  object-fit: cover;
+}
+
+/* Reduce paint for GPU compositing */
+.will-change-transform {
+  will-change: transform;
+  transform: translateZ(0);
 }

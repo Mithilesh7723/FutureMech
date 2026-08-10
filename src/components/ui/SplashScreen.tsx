@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
 export function SplashScreen() {
-  const [show, setShow] = useState(true);
+  const pathname = usePathname();
+  const [show, setShow] = useState(pathname === "/");
 
   useEffect(() => {
-    const timer = setTimeout(() => setShow(false), 3500);
+    if (pathname !== "/") return;
+    const timer = setTimeout(() => setShow(false), 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [pathname]);
 
   return (
     <AnimatePresence>

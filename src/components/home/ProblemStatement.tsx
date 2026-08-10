@@ -59,7 +59,7 @@ function QuestionRow({ item, index }: { item: (typeof questions)[0]; index: numb
               src={item.image}
               alt=""
               fill
-              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              className="object-cover img-zoom"
               sizes="(max-width: 640px) 100vw, 55vw"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-ink/30 to-transparent sm:bg-gradient-to-r" />

@@ -176,7 +176,7 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
                   <div
                     key={index}
                     className={cn(
-                      "absolute transition-all duration-500 ease-in-out",
+                      "absolute transition-all duration-500 ease-in-out group",
                       "w-48 h-72 sm:w-64 sm:h-96 lg:w-72 lg:h-[460px]"
                     )}
                     style={{
@@ -187,11 +187,13 @@ export const HeroSection = React.forwardRef<HTMLDivElement, HeroProps>(
                       visibility: Math.abs(pos) > 1 ? "hidden" : "visible",
                     }}
                   >
-                    <img
-                      src={image.src}
-                      alt={image.alt}
-                      className="object-cover w-full h-full rounded-2xl lg:rounded-3xl border-2 border-foreground/8 shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
-                    />
+                    <div className="w-full h-full overflow-hidden rounded-2xl lg:rounded-3xl">
+                      <img
+                        src={image.src}
+                        alt={image.alt}
+                        className="object-cover w-full h-full border-2 border-foreground/8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] img-zoom"
+                      />
+                    </div>
                   </div>
                 );
               })}
