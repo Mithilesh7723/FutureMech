@@ -24,8 +24,8 @@ import {
   Users,
   Loader2,
   Check,
-  Shield,
-  Skull,
+  ClipboardList,
+  Activity,
 } from "lucide-react";
 
 type LeadStatus = "new" | "viewed" | "contacted" | "converted" | "lost";
@@ -566,10 +566,15 @@ export default function AdminPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#8B6914]">
-                <span className="text-xs font-bold text-white">FM</span>
-              </div>
-              <span className="text-sm font-bold text-[#2C1810] hidden sm:inline">
+              <Image
+                src="/FutureMEch Logo.png"
+                alt="FutureMech"
+                width={130}
+                height={34}
+                className="h-7 w-auto"
+                priority
+              />
+              <span className="text-xs font-semibold text-[#8B6914]/50 uppercase tracking-wider hidden sm:inline">
                 Lead Manager
               </span>
             </div>
@@ -625,7 +630,7 @@ export default function AdminPage() {
                 : "bg-white text-[#8B6914]/70 border-[#D4C4A8]/60 hover:border-[#8B6914]/40 hover:bg-[#F5F0E8]"
             }`}
           >
-            <Shield className="h-4 w-4" />
+            <ClipboardList className="h-4 w-4" />
             Audit Log
             <span
               className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
@@ -793,12 +798,14 @@ export default function AdminPage() {
                 {filteredLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="group relative flex items-center gap-4 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-3 shadow-sm hover:border-[#8B6914]/30 hover:shadow-md transition-all"
+                    onClick={() => setDetailLead(lead)}
+                    className="group relative flex items-center gap-4 rounded-xl border border-[#D4C4A8]/60 bg-white px-4 py-3 shadow-sm hover:border-[#8B6914]/30 hover:shadow-md transition-all cursor-pointer"
                   >
                     <input
                       type="checkbox"
                       checked={selected.has(lead.id)}
                       onChange={() => toggleSelect(lead.id)}
+                      onClick={(e) => e.stopPropagation()}
                       className="h-4 w-4 shrink-0 rounded border-[#D4C4A8] text-[#8B6914] focus:ring-[#8B6914]/20"
                     />
 
@@ -883,7 +890,7 @@ export default function AdminPage() {
 
                 {auditLogs.length === 0 ? (
                   <div className="rounded-xl border border-[#D4C4A8]/60 bg-white p-12 text-center shadow-sm">
-                    <Shield className="mx-auto h-10 w-10 text-[#8B6914]/30" />
+                    <ClipboardList className="mx-auto h-10 w-10 text-[#8B6914]/30" />
                     <p className="mt-3 text-sm text-[#8B6914]/60">No audit logs yet</p>
                   </div>
                 ) : (
@@ -923,7 +930,7 @@ export default function AdminPage() {
                                 </td>
                                 <td className="px-4 py-3">
                                   <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${actionStyles[log.action] || "bg-gray-100 text-gray-700 border-gray-200"}`}>
-                                    {log.action === "injection_attempt" && <Skull className="h-3 w-3" />}
+                                    {log.action === "injection_attempt" && <AlertCircle className="h-3 w-3" />}
                                     {actionLabels[log.action] || log.action}
                                   </span>
                                 </td>
