@@ -49,6 +49,7 @@ const SERVICE_LABELS: Record<string, string> = {
   "other": "Other",
 };
 
+const AUTH_USER = "admin";
 const AUTH_PASS = "admin";
 
 function fmtDate(iso: string) {
@@ -87,8 +88,12 @@ async function api<T>(url: string, opts?: RequestInit): Promise<T> {
 
 export default function AdminPage() {
   const [auth, setAuth] = useState(false);
+  const [username, setUsername] = useState("");
   const [pw, setPw] = useState("");
   const [pwErr, setPwErr] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const [locked, setLocked] = useState(false);
+  const [lockTimer, setLockTimer] = useState(0);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
@@ -105,9 +110,33 @@ export default function AdminPage() {
   }, []);
 
   const login = useCallback(() => {
-    if (pw === AUTH_PASS) { setAuth(true); setPwErr(""); }
-    else setPwErr("Wrong password");
-  }, [pw]);
+    if (locked) return;
+    if (username.trim() === AUTH_USER && pw === AUTH_PASS) {
+      setAuth(true);
+      setPwErr("");
+      setAttempts(0);
+    } else {
+      const next = attempts + 1;
+      setAttempts(next);
+      setPwErr("Invalid username or password");
+      if (next >= 5) {
+        setLocked(true);
+        setPwErr("Too many attempts. Locked for 60 seconds.");
+        let remaining = 60;
+        setLockTimer(remaining);
+        const interval = setInterval(() => {
+          remaining--;
+          setLockTimer(remaining);
+          if (remaining <= 0) {
+            clearInterval(interval);
+            setLocked(false);
+            setAttempts(0);
+            setPwErr("");
+          }
+        }, 1000);
+      }
+    }
+  }, [username, pw, attempts, locked]);
 
   useEffect(() => {
     if (!auth) return;
@@ -217,20 +246,37 @@ export default function AdminPage() {
             <p className="mt-3 text-[0.75rem] font-medium uppercase tracking-[0.2em] text-stone">Admin Panel</p>
           </div>
           <div className="rounded-2xl border border-parchment bg-white-pure p-6 shadow-sm">
-            <label className="mb-2 block text-[0.6875rem] font-semibold uppercase tracking-wider text-graphite">Password</label>
+            <label className="mb-2 block text-[0.6875rem] font-semibold uppercase tracking-wider text-graphite">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); setPwErr(""); }}
+              onKeyDown={(e) => e.key === "Enter" && login()}
+              placeholder="Enter username"
+              autoComplete="username"
+              disabled={locked}
+              className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-3 text-[0.875rem] text-ink placeholder:text-sand focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <label className="mb-2 mt-4 block text-[0.6875rem] font-semibold uppercase tracking-wider text-graphite">Password</label>
             <input
               type="password"
               value={pw}
               onChange={(e) => { setPw(e.target.value); setPwErr(""); }}
               onKeyDown={(e) => e.key === "Enter" && login()}
               placeholder="Enter password"
-              className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-3 text-[0.875rem] text-ink placeholder:text-sand focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10 transition-all"
+              autoComplete="current-password"
+              disabled={locked}
+              className="w-full rounded-xl border border-parchment bg-white-pure px-4 py-3 text-[0.875rem] text-ink placeholder:text-sand focus:border-bronze focus:outline-none focus:ring-2 focus:ring-bronze/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             />
             {pwErr && <p className="mt-2 text-[0.75rem] text-red-600">{pwErr}</p>}
-            <button onClick={login} className="mt-4 w-full rounded-xl bg-ink py-3 text-[0.875rem] font-semibold text-white-pure transition-all duration-200 hover:bg-graphite active:scale-[0.98]">
+            {locked && lockTimer > 0 && (
+              <p className="mt-1 text-[0.6875rem] text-stone">Try again in {lockTimer}s</p>
+            )}
+            <button onClick={login} disabled={locked || !username.trim() || !pw.trim()} className="mt-4 w-full rounded-xl bg-ink py-3 text-[0.875rem] font-semibold text-white-pure transition-all duration-200 hover:bg-graphite active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed">
               Sign In
             </button>
           </div>
+          <p className="mt-4 text-center text-[0.625rem] text-sand">Protected area. Unauthorized access is logged.</p>
         </div>
       </div>
     );

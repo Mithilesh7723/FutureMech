@@ -1,6 +1,22 @@
 import { NextResponse } from "next/server";
 import { getAllLeads, addLead, updateLeadStatus, deleteLead, type Lead, type LeadStatus } from "@/lib/leads-store";
 
+const MAX_NAME = 100;
+const MAX_PHONE = 15;
+const MAX_EMAIL = 254;
+const MAX_MESSAGE = 2000;
+const MAX_VEHICLE = 100;
+
+function sanitize(str: unknown): string {
+  if (typeof str !== "string") return "";
+  return str.replace(/[<>]/g, "").trim().slice(0, MAX_MESSAGE);
+}
+
+function sanitizeShort(str: unknown, max: number): string {
+  if (typeof str !== "string") return "";
+  return str.replace(/[<>"';&]/g, "").trim().slice(0, max);
+}
+
 function parseQuery(url: URL) {
   return {
     status: url.searchParams.get("status") ?? "",
@@ -53,7 +69,24 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    const lead = addLead({ name, phone, email, service, vehicle, message });
+    const cleanName = sanitizeShort(name, MAX_NAME);
+    const cleanPhone = sanitizeShort(phone, MAX_PHONE);
+    const cleanEmail = sanitizeShort(email, MAX_EMAIL);
+    const cleanService = sanitizeShort(service, 50);
+    const cleanVehicle = sanitizeShort(vehicle, MAX_VEHICLE);
+    const cleanMessage = sanitize(message);
+    if (!cleanName || !cleanPhone || !cleanEmail) {
+      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(cleanEmail)) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+    const phoneRe = /^[+]?[\d\s-]{7,15}$/;
+    if (!phoneRe.test(cleanPhone)) {
+      return NextResponse.json({ error: "Invalid phone" }, { status: 400 });
+    }
+    const lead = addLead({ name: cleanName, phone: cleanPhone, email: cleanEmail, service: cleanService, vehicle: cleanVehicle, message: cleanMessage });
     return NextResponse.json(lead, { status: 201 });
   } catch {
     return NextResponse.json(
