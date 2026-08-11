@@ -14,24 +14,12 @@ import { auth, googleProvider, db } from "@/lib/firebase";
 
 const ALLOWED_EMAIL = "sukhrajsingh7773@gmail.com";
 
-async function getClientIP(): Promise<string> {
-  try {
-    const res = await fetch("https://api.ipify.org?format=json");
-    const data = await res.json();
-    return data.ip || "unknown";
-  } catch {
-    return "unknown";
-  }
-}
-
 async function auditLog(action: string, email?: string, extra?: string) {
   try {
-    const ip = await getClientIP();
     const ua = navigator.userAgent || "";
     await addDoc(collection(db, "audit_log"), {
       action,
       email: email || "",
-      ip,
       userAgent: ua,
       message: extra || "",
       timestamp: new Date().toISOString(),

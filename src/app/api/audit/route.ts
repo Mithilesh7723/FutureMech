@@ -28,7 +28,8 @@ export async function POST(request: Request) {
 
     await logAudit({ action, email, ip, userAgent, field, message });
     return NextResponse.json({ ok: true });
-  } catch {
+  } catch (e) {
+    console.error("Audit API error:", e);
     return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

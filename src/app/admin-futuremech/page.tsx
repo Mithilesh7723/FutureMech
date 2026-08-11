@@ -468,7 +468,7 @@ export default function AdminPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full rounded-xl border border-[#D4C4A8]/50 bg-[#FAF8F4] px-4 py-3 text-[0.875rem] text-[#2C1810] placeholder-[#2C1810]/30 focus:border-[#8B6914] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#8B6914]/10 transition-all"
-                  placeholder="sukhrajsingh7773@gmail.com"
+                  placeholder="you@example.com"
                 />
               </div>
               <div>
